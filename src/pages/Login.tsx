@@ -88,7 +88,7 @@ export default function Login() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-muted-foreground mt-2 text-sm font-mono"
+            className="text-muted-foreground mt-2 text-sm font-mono flicker-slow"
           >
             [ AUTHENTICATION PORTAL ]
           </motion.p>
@@ -99,7 +99,7 @@ export default function Login() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="cyber-card p-8"
+          className="cyber-card p-8 glitch-box noise"
         >
           {/* Mode toggle */}
           <div className="flex gap-4 mb-6">

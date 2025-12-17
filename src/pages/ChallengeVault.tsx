@@ -234,7 +234,7 @@ export default function ChallengeVault() {
                 <Menu className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-xl font-bold text-primary">Challenge Vault</h1>
+                <h1 className="text-xl font-bold text-primary glitch" data-text="Challenge Vault">Challenge Vault</h1>
                 <p className="text-xs text-muted-foreground font-mono">
                   {filteredChallenges.length} challenges available
                 </p>
@@ -260,8 +260,8 @@ export default function ChallengeVault() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => !challenge.locked && setSelectedChallenge(challenge)}
-                  className={`cyber-card p-5 cursor-pointer ${
-                    challenge.locked ? "opacity-50 cursor-not-allowed" : ""
+                  className={`cyber-card p-5 cursor-pointer noise ${
+                    challenge.locked ? "opacity-50 cursor-not-allowed" : "hover:glitch-box"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">

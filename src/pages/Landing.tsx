@@ -77,7 +77,7 @@ export default function Landing() {
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter">
-            <span className="text-primary text-glow">NOVUS</span>
+            <span className="text-primary text-glow glitch" data-text="NOVUS">NOVUS</span>
           </h1>
 
           <p className="text-xl md:text-2xl text-card-foreground font-mono max-w-2xl mx-auto">
@@ -113,7 +113,7 @@ export default function Landing() {
           transition={{ delay: 1 }}
           className="mt-16 max-w-md w-full"
         >
-          <div className="cyber-card p-4 text-left">
+          <div className="cyber-card p-4 text-left glitch-box noise">
             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
               <div className="w-2 h-2 rounded-full bg-destructive" />
               <div className="w-2 h-2 rounded-full bg-yellow-500" />
@@ -144,7 +144,7 @@ export default function Landing() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-primary text-glow">
+                <div className="text-3xl md:text-4xl font-bold text-primary text-glow flicker-slow">
                   {stat.value}
                 </div>
                 <div className="text-sm text-muted-foreground font-mono uppercase tracking-wider mt-1">

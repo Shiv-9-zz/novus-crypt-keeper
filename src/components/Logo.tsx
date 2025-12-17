@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 interface Props {
   size?: "sm" | "md" | "lg";
   animate?: boolean;
+  glitch?: boolean;
 }
 
-export function Logo({ size = "md", animate = true }: Props) {
+export function Logo({ size = "md", animate = true, glitch = true }: Props) {
   const sizeClasses = {
     sm: "text-xl",
     md: "text-3xl",
@@ -19,8 +20,13 @@ export function Logo({ size = "md", animate = true }: Props) {
       animate={animate ? { opacity: 1, y: 0 } : false}
       transition={{ duration: 0.5 }}
     >
-      <span className="text-primary text-glow">NOVUS</span>
-      <span className="text-muted-foreground ml-2 text-[0.6em]">CTF</span>
+      <span 
+        className={`text-primary text-glow ${glitch ? 'glitch' : ''}`}
+        data-text="NOVUS"
+      >
+        NOVUS
+      </span>
+      <span className="text-muted-foreground ml-2 text-[0.6em] flicker-slow">CTF</span>
     </motion.div>
   );
 }
