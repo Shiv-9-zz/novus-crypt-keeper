@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Users, Building2, User, Hash, AlertTriangle, Check, ChevronRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { CyberBackground } from "@/components/CyberBackground";
 import { toast } from "sonner";
 
 interface TeamData {
@@ -112,7 +113,8 @@ export default function TeamRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <CyberBackground />
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}

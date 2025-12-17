@@ -6,6 +6,7 @@ import {
   Shield, FileText, Archive
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { CyberBackground } from "@/components/CyberBackground";
 import { useNavigate } from "react-router-dom";
 
 interface Challenge {
@@ -154,7 +155,8 @@ export default function ChallengeVault() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative overflow-hidden">
+      <CyberBackground />
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AlertTriangle, Home } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { CyberBackground } from "@/components/CyberBackground";
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -9,8 +10,7 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-cyber-grid bg-cyber-grid opacity-20" />
+      <CyberBackground />
       
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
