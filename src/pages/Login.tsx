@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, AlertTriangle, Shield } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { HauntedEffects } from "@/components/HauntedEffects";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -71,6 +72,7 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Live animated background */}
       <CyberBackground />
+      <HauntedEffects />
       
       {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent z-[1]" />
