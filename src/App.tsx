@@ -6,10 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { BootScreen } from "@/components/BootScreen";
+import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Rules from "@/pages/Rules";
 import TeamRegistration from "@/pages/TeamRegistration";
 import ChallengeVault from "@/pages/ChallengeVault";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,11 +58,12 @@ const App = () => {
         {bootComplete && (
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/rules" element={<Rules />} />
               <Route path="/team" element={<TeamRegistration />} />
               <Route path="/vault" element={<ChallengeVault />} />
+              <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

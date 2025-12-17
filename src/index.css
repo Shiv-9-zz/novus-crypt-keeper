@@ -171,12 +171,19 @@
 
   /* Terminal input */
   .terminal-input {
-    @apply bg-input border border-border text-foreground font-mono px-4 py-3 rounded transition-all duration-200;
+    @apply bg-input border border-border font-mono px-4 py-3 rounded transition-all duration-200;
+    color: hsl(120 60% 75%);
+    caret-color: hsl(var(--primary));
+  }
+
+  .terminal-input::placeholder {
+    color: hsl(0 0% 40%);
   }
 
   .terminal-input:focus {
     @apply outline-none border-primary;
     box-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary));
   }
 
   /* Cyber button */
