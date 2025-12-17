@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { CyberBackground } from "@/components/CyberBackground";
 import { toast } from "sonner";
 
 type Challenge = {
@@ -222,7 +223,8 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <CyberBackground />
       {/* Header */}
       <header className="border-b border-border bg-card/50 sticky top-0 z-50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

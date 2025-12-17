@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ScrollText, ChevronDown, Check, AlertTriangle, Shield } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { CyberBackground } from "@/components/CyberBackground";
 
 const rules = [
   {
@@ -88,7 +89,8 @@ export default function Rules() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <CyberBackground />
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
