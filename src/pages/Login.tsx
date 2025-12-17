@@ -254,13 +254,19 @@ export default function Login() {
           </div>
         </motion.div>
 
-        {/* Security notice */}
+        {/* Admin Access */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-6 text-center"
+          className="mt-6 text-center space-y-2"
         >
+          <button
+            onClick={() => navigate("/admin")}
+            className="text-xs text-muted-foreground/50 hover:text-accent transition-colors font-mono"
+          >
+            [ ADMIN ACCESS ]
+          </button>
           <p className="text-xs text-muted-foreground/50 font-mono">
             ◉ 256-BIT ENCRYPTION ENABLED
           </p>

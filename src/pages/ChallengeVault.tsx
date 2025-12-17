@@ -169,10 +169,10 @@ export default function ChallengeVault() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -280 }}
-        animate={{ x: sidebarOpen ? 0 : -280 }}
-        className={`fixed md:static w-72 h-screen bg-card border-r border-border z-50 md:z-auto md:translate-x-0 transition-transform`}
+      <aside
+        className={`fixed md:static w-72 h-screen bg-card border-r border-border z-50 md:z-auto transform transition-transform duration-300 ease-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
       >
         <div className="p-4 border-b border-border flex items-center justify-between">
           <Logo size="sm" animate={false} />
@@ -217,7 +217,7 @@ export default function ChallengeVault() {
             <span>Disconnect</span>
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Main content */}
       <div className="flex-1 min-h-screen">
