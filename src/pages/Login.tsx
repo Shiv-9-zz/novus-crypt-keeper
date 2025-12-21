@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, AlertTriangle, Shield } from "lucide-react";
@@ -6,9 +6,15 @@ import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { HauntedEffects } from "@/components/HauntedEffects";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
+
+const emailSchema = z.string().email("Invalid email format").max(255);
+const passwordSchema = z.string().min(6, "Min 6 characters").max(128);
 
 export default function Login() {
   const navigate = useNavigate();
+  const { user, signIn, signUp, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,25 +25,26 @@ export default function Login() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/rules");
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
-    if (!formData.email) {
-      newErrors.email = "Email required";
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = "Invalid email format";
+    // Validate email
+    const emailResult = emailSchema.safeParse(formData.email.trim());
+    if (!emailResult.success) {
+      newErrors.email = emailResult.error.errors[0].message;
     }
 
-    if (!formData.password) {
-      newErrors.password = "Password required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Min 6 characters";
+    // Validate password
+    const passwordResult = passwordSchema.safeParse(formData.password);
+    if (!passwordResult.success) {
+      newErrors.password = passwordResult.error.errors[0].message;
     }
 
     if (mode === "register" && formData.password !== formData.confirmPassword) {
@@ -52,12 +59,40 @@ export default function Login() {
     setErrors({});
     setLoading(true);
 
-    // Simulate auth - replace with actual Supabase auth
-    setTimeout(() => {
+    try {
+      if (mode === "login") {
+        const { error } = await signIn(formData.email.trim(), formData.password);
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("Invalid email or password");
+          } else {
+            toast.error(error.message);
+          }
+          setLoading(false);
+          return;
+        }
+        toast.success("Access granted");
+        navigate("/rules");
+      } else {
+        const { error } = await signUp(formData.email.trim(), formData.password);
+        if (error) {
+          if (error.message.includes("already registered")) {
+            toast.error("Email already registered. Please login instead.");
+          } else {
+            toast.error(error.message);
+          }
+          setLoading(false);
+          return;
+        }
+        toast.success("Registration complete! You can now login.");
+        setMode("login");
+        setFormData({ ...formData, password: "", confirmPassword: "" });
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+    } finally {
       setLoading(false);
-      toast.success(mode === "login" ? "Access granted" : "Registration complete");
-      navigate("/rules");
-    }, 1500);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,6 +102,15 @@ export default function Login() {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <CyberBackground />
+        <div className="text-primary font-mono animate-pulse">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -259,7 +303,7 @@ export default function Login() {
           </div>
         </motion.div>
 
-        {/* Admin Access */}
+        {/* Back to landing */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -267,10 +311,10 @@ export default function Login() {
           className="mt-6 text-center space-y-2"
         >
           <button
-            onClick={() => navigate("/admin")}
-            className="text-xs text-muted-foreground/50 hover:text-accent transition-colors font-mono"
+            onClick={() => navigate("/")}
+            className="text-xs text-muted-foreground/50 hover:text-primary transition-colors font-mono"
           >
-            [ ADMIN ACCESS ]
+            [ BACK TO HOME ]
           </button>
           <p className="text-xs text-muted-foreground/50 font-mono">
             ◉ 256-BIT ENCRYPTION ENABLED

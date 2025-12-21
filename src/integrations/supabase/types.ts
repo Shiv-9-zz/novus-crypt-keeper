@@ -14,7 +14,220 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      challenge_files: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: string
+          id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: string
+          id?: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_files_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          difficulty: string
+          flag: string
+          hint: string | null
+          id: string
+          is_locked: boolean
+          is_visible: boolean
+          points: number
+          solve_count: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          difficulty: string
+          flag: string
+          hint?: string | null
+          id?: string
+          is_locked?: boolean
+          is_visible?: boolean
+          points?: number
+          solve_count?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          difficulty?: string
+          flag?: string
+          hint?: string | null
+          id?: string
+          is_locked?: boolean
+          is_visible?: boolean
+          points?: number
+          solve_count?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          challenge_id: string
+          id: string
+          is_correct: boolean
+          submitted_at: string
+          submitted_flag: string
+          team_id: string
+        }
+        Insert: {
+          challenge_id: string
+          id?: string
+          is_correct?: boolean
+          submitted_at?: string
+          submitted_flag: string
+          team_id: string
+        }
+        Update: {
+          challenge_id?: string
+          id?: string
+          is_correct?: boolean
+          submitted_at?: string
+          submitted_flag?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          institution: string
+          leader_email: string
+          leader_name: string
+          name: string
+          score: number
+          team_id: string
+          team_size: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          institution: string
+          leader_email: string
+          leader_name: string
+          name: string
+          score?: number
+          team_id: string
+          team_size?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          institution?: string
+          leader_email?: string
+          leader_name?: string
+          name?: string
+          score?: number
+          team_id?: string
+          team_size?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
