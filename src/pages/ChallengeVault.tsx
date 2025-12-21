@@ -1,142 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Lock, Key, Globe, Search, Binary, Puzzle, 
   Download, X, ChevronDown, LogOut, Menu,
-  Shield, FileText, Archive
+  Shield, FileText, Archive, Send, AlertTriangle
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { HauntedEffects } from "@/components/HauntedEffects";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface ChallengeFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: string;
+}
 
 interface Challenge {
   id: string;
   title: string;
-  category: "crypto" | "web" | "osint" | "forensics" | "reverse" | "misc";
+  category: string;
   difficulty: "easy" | "medium" | "hard" | "insane";
   description: string;
   points: number;
-  files?: { name: string; type: string }[];
-  locked?: boolean;
+  hint: string | null;
+  is_locked: boolean;
+  files: ChallengeFile[];
 }
 
 const categories = [
   { id: "all", name: "All Challenges", icon: Puzzle },
-  { id: "crypto", name: "Cryptography", icon: Key },
-  { id: "web", name: "Web Exploitation", icon: Globe },
-  { id: "osint", name: "OSINT", icon: Search },
-  { id: "forensics", name: "Forensics", icon: Binary },
-  { id: "reverse", name: "Reverse Engineering", icon: Lock },
-  { id: "misc", name: "Miscellaneous", icon: Puzzle },
+  { id: "Crypto", name: "Cryptography", icon: Key },
+  { id: "Web", name: "Web Exploitation", icon: Globe },
+  { id: "OSINT", name: "OSINT", icon: Search },
+  { id: "Forensics", name: "Forensics", icon: Binary },
+  { id: "Reverse", name: "Reverse Engineering", icon: Lock },
+  { id: "Misc", name: "Miscellaneous", icon: Puzzle },
 ];
 
-const challenges: Challenge[] = [
-  {
-    id: "crypto-1",
-    title: "Whispers in the Void",
-    category: "crypto",
-    difficulty: "easy",
-    description: "The ancients spoke in riddles. A cipher most classical hides the truth within these forgotten scrolls. The key lies where Caesar once walked...",
-    points: 100,
-    files: [{ name: "cipher.txt", type: "txt" }],
-  },
-  {
-    id: "crypto-2",
-    title: "The Quantum Paradox",
-    category: "crypto",
-    difficulty: "hard",
-    description: "In realms where Schrödinger's equations govern reality, encryption takes on new meaning. Decode the quantum-entangled message before observation collapses the wavefunction.",
-    points: 400,
-    files: [{ name: "quantum_state.bin", type: "bin" }, { name: "measurement.py", type: "txt" }],
-  },
-  {
-    id: "web-1",
-    title: "Shadow Injection",
-    category: "web",
-    difficulty: "medium",
-    description: "A dark web marketplace hides its secrets behind layers of authentication. But every fortress has its weakness. Find the injection point in the shadows.",
-    points: 200,
-  },
-  {
-    id: "web-2",
-    title: "Cookie Monster",
-    category: "web",
-    difficulty: "easy",
-    description: "The server remembers you through mystical tokens. Perhaps these cookies hold more than just session data...",
-    points: 100,
-  },
-  {
-    id: "osint-1",
-    title: "Digital Footprints",
-    category: "osint",
-    difficulty: "medium",
-    description: "Agent X left traces across the digital realm. Follow the breadcrumbs through social networks, archives, and forgotten corners of the internet.",
-    points: 250,
-    files: [{ name: "profile_image.png", type: "bin" }],
-  },
-  {
-    id: "forensics-1",
-    title: "Memory Fragments",
-    category: "forensics",
-    difficulty: "hard",
-    description: "A compromised system's memory dump contains evidence of intrusion. Sift through the digital debris to uncover the attacker's trail.",
-    points: 350,
-    files: [{ name: "memdump.raw", type: "bin" }],
-    locked: true,
-  },
-  {
-    id: "forensics-2",
-    title: "The Hidden Layer",
-    category: "forensics",
-    difficulty: "medium",
-    description: "This image appears innocent, but beneath its surface lies encrypted data. Employ steganographic techniques to reveal what's concealed.",
-    points: 200,
-    files: [{ name: "innocent.png", type: "bin" }],
-  },
-  {
-    id: "reverse-1",
-    title: "Binary Necromancy",
-    category: "reverse",
-    difficulty: "insane",
-    description: "Raise the dead code from this heavily obfuscated binary. Anti-debugging tricks, packed sections, and virtual machine protection guard its secrets.",
-    points: 500,
-    files: [{ name: "necromancer.exe", type: "bin" }],
-  },
-  {
-    id: "reverse-2",
-    title: "Protocol Specter",
-    category: "reverse",
-    difficulty: "hard",
-    description: "A custom protocol communicates with the command server. Reverse engineer the binary to understand its language and forge your own messages.",
-    points: 400,
-    files: [{ name: "client.elf", type: "bin" }, { name: "capture.pcap", type: "bin" }],
-  },
-  {
-    id: "misc-1",
-    title: "Esoteric Transmissions",
-    category: "misc",
-    difficulty: "easy",
-    description: "Strange signals emanate from an unknown source. The encoding scheme defies conventional wisdom. Think outside the binary box.",
-    points: 150,
-    files: [{ name: "signal.wav", type: "bin" }],
-  },
-];
-
-const difficultyColors = {
+const difficultyColors: Record<string, string> = {
   easy: "diff-easy",
   medium: "diff-medium",
   hard: "diff-hard",
   insane: "diff-insane",
 };
 
-const categoryBadges = {
-  crypto: "badge-crypto",
-  web: "badge-web",
-  osint: "badge-osint",
-  forensics: "badge-forensics",
-  reverse: "badge-reverse",
-  misc: "badge-misc",
+const categoryBadges: Record<string, string> = {
+  Crypto: "badge-crypto",
+  Web: "badge-web",
+  OSINT: "badge-osint",
+  Forensics: "badge-forensics",
+  Reverse: "badge-reverse",
+  Misc: "badge-misc",
 };
 
 export default function ChallengeVault() {
@@ -144,6 +62,53 @@ export default function ChallengeVault() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [teamName, setTeamName] = useState("TEAM");
+  const [flagInput, setFlagInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const storedTeamName = sessionStorage.getItem("novus_team_name");
+    if (storedTeamName) {
+      setTeamName(storedTeamName);
+    }
+    fetchChallenges();
+  }, []);
+
+  const fetchChallenges = async () => {
+    try {
+      const { data: challengesData, error } = await supabase
+        .from("challenges")
+        .select("*")
+        .eq("is_visible", true)
+        .order("points", { ascending: true });
+
+      if (error) throw error;
+
+      // Fetch files for each challenge
+      const challengesWithFiles = await Promise.all(
+        (challengesData || []).map(async (challenge) => {
+          const { data: files } = await supabase
+            .from("challenge_files")
+            .select("*")
+            .eq("challenge_id", challenge.id);
+          
+          return {
+            ...challenge,
+            files: files || [],
+          };
+        })
+      );
+
+      setChallenges(challengesWithFiles as Challenge[]);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      toast.error("Failed to load challenges");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredChallenges =
     selectedCategory === "all"
@@ -154,6 +119,53 @@ export default function ChallengeVault() {
     const cat = categories.find((c) => c.id === category);
     return cat?.icon || Puzzle;
   };
+
+  const handleDownloadFile = async (file: ChallengeFile) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("challenge-files")
+        .download(file.file_path);
+
+      if (error) throw error;
+
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Failed to download file");
+    }
+  };
+
+  const handleSubmitFlag = async () => {
+    if (!flagInput.trim() || !selectedChallenge) return;
+    
+    setSubmitting(true);
+    
+    // Get team ID from session
+    const teamId = sessionStorage.getItem("novus_team_id");
+    
+    // For now, just show a message - in production, you'd verify against the actual flag
+    // This requires server-side validation to prevent cheating
+    toast.info("Flag submitted for verification!");
+    setFlagInput("");
+    setSubmitting(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <CyberBackground />
+        <div className="text-primary font-mono animate-pulse">Loading challenges...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex relative overflow-hidden">
@@ -245,58 +257,65 @@ export default function ChallengeVault() {
 
             <div className="flex items-center gap-2 text-sm">
               <Shield className="w-4 h-4 text-primary" />
-              <span className="text-muted-foreground font-mono">TEAM: PHANTOM_01</span>
+              <span className="text-muted-foreground font-mono">TEAM: {teamName}</span>
             </div>
           </div>
         </header>
 
         {/* Challenge grid */}
         <div className="p-4 md:p-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredChallenges.map((challenge, index) => {
-              const CategoryIcon = getCategoryIcon(challenge.category);
-              return (
-                <motion.div
-                  key={challenge.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => !challenge.locked && setSelectedChallenge(challenge)}
-                  className={`cyber-card p-5 cursor-pointer noise ${
-                    challenge.locked ? "opacity-50 cursor-not-allowed" : "hover:glitch-box"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`p-2 rounded ${categoryBadges[challenge.category]} border`}>
-                      <CategoryIcon className="w-4 h-4" />
-                    </div>
-                    <span className={`text-xs font-mono ${difficultyColors[challenge.difficulty]}`}>
-                      {challenge.difficulty.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <h3 className="font-bold text-card-foreground mb-2 flex items-center gap-2">
-                    {challenge.locked && <Lock className="w-4 h-4 text-muted-foreground" />}
-                    {challenge.title}
-                  </h3>
-
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                    {challenge.description}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-primary font-mono">{challenge.points} PTS</span>
-                    {challenge.files && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Archive className="w-3 h-3" />
-                        <span>{challenge.files.length} file(s)</span>
+          {filteredChallenges.length === 0 ? (
+            <div className="cyber-card p-12 text-center">
+              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No challenges available in this category</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredChallenges.map((challenge, index) => {
+                const CategoryIcon = getCategoryIcon(challenge.category);
+                return (
+                  <motion.div
+                    key={challenge.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => !challenge.is_locked && setSelectedChallenge(challenge)}
+                    className={`cyber-card p-5 cursor-pointer noise ${
+                      challenge.is_locked ? "opacity-50 cursor-not-allowed" : "hover:glitch-box"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`p-2 rounded ${categoryBadges[challenge.category] || "badge-misc"} border`}>
+                        <CategoryIcon className="w-4 h-4" />
                       </div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                      <span className={`text-xs font-mono ${difficultyColors[challenge.difficulty]}`}>
+                        {challenge.difficulty.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-card-foreground mb-2 flex items-center gap-2">
+                      {challenge.is_locked && <Lock className="w-4 h-4 text-muted-foreground" />}
+                      {challenge.title}
+                    </h3>
+
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                      {challenge.description}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-primary font-mono">{challenge.points} PTS</span>
+                      {challenge.files && challenge.files.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Archive className="w-3 h-3" />
+                          <span>{challenge.files.length} file(s)</span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -321,7 +340,7 @@ export default function ChallengeVault() {
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-1 rounded text-xs border ${categoryBadges[selectedChallenge.category]}`}>
+                    <span className={`px-2 py-1 rounded text-xs border ${categoryBadges[selectedChallenge.category] || "badge-misc"}`}>
                       {selectedChallenge.category.toUpperCase()}
                     </span>
                     <span className={`text-xs font-mono ${difficultyColors[selectedChallenge.difficulty]}`}>
@@ -358,6 +377,18 @@ export default function ChallengeVault() {
                 </p>
               </div>
 
+              {/* Hint */}
+              {selectedChallenge.hint && (
+                <div className="mb-6 p-4 bg-accent/10 border border-accent/30 rounded">
+                  <h3 className="text-sm text-accent mb-2 font-mono uppercase tracking-wider">
+                    Hint
+                  </h3>
+                  <p className="text-card-foreground text-sm">
+                    {selectedChallenge.hint}
+                  </p>
+                </div>
+              )}
+
               {/* Files */}
               {selectedChallenge.files && selectedChallenge.files.length > 0 && (
                 <div className="mb-6">
@@ -365,14 +396,16 @@ export default function ChallengeVault() {
                     Attachments
                   </h3>
                   <div className="space-y-2">
-                    {selectedChallenge.files.map((file, index) => (
+                    {selectedChallenge.files.map((file) => (
                       <button
-                        key={index}
+                        key={file.id}
+                        onClick={() => handleDownloadFile(file)}
                         className="w-full flex items-center justify-between p-3 rounded border border-border hover:border-primary/50 transition-all group"
                       >
                         <div className="flex items-center gap-3">
                           <FileText className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-card-foreground">{file.name}</span>
+                          <span className="text-sm text-card-foreground">{file.file_name}</span>
+                          <span className="text-xs text-muted-foreground">({file.file_size})</span>
                         </div>
                         <Download className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </button>
@@ -381,7 +414,31 @@ export default function ChallengeVault() {
                 </div>
               )}
 
-              {/* Hint */}
+              {/* Flag submission */}
+              <div className="mb-4">
+                <h3 className="text-sm text-muted-foreground mb-3 font-mono uppercase tracking-wider">
+                  Submit Flag
+                </h3>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={flagInput}
+                    onChange={(e) => setFlagInput(e.target.value)}
+                    placeholder="NOVUS{...}"
+                    className="terminal-input flex-1 font-mono"
+                  />
+                  <button
+                    onClick={handleSubmitFlag}
+                    disabled={submitting || !flagInput.trim()}
+                    className="cyber-btn-filled px-4 flex items-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    Submit
+                  </button>
+                </div>
+              </div>
+
+              {/* Format hint */}
               <div className="p-4 bg-muted rounded">
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <ChevronDown className="w-4 h-4" />

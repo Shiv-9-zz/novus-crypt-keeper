@@ -5,6 +5,13 @@ import { Users, Building2, User, Hash, AlertTriangle, Check, ChevronRight } from
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const teamNameSchema = z.string().min(3, "Min 3 characters").max(30, "Max 30 characters");
+const emailSchema = z.string().email("Invalid email");
+const nameSchema = z.string().min(1, "Required");
+const institutionSchema = z.string().min(1, "Required");
 
 interface TeamData {
   teamName: string;
@@ -50,29 +57,27 @@ export default function TeamRegistration() {
 
     switch (step) {
       case 1:
-        if (!teamData.teamName.trim()) {
-          newErrors.teamName = "Team name required";
-        } else if (teamData.teamName.length < 3) {
-          newErrors.teamName = "Min 3 characters";
-        } else if (teamData.teamName.length > 30) {
-          newErrors.teamName = "Max 30 characters";
+        const teamNameResult = teamNameSchema.safeParse(teamData.teamName.trim());
+        if (!teamNameResult.success) {
+          newErrors.teamName = teamNameResult.error.errors[0].message;
         }
         if (!teamData.teamSize) {
           newErrors.teamSize = "Select team size";
         }
         break;
       case 2:
-        if (!teamData.teamLeader.trim()) {
+        const leaderResult = nameSchema.safeParse(teamData.teamLeader.trim());
+        if (!leaderResult.success) {
           newErrors.teamLeader = "Leader name required";
         }
-        if (!teamData.teamLeaderEmail.trim()) {
-          newErrors.teamLeaderEmail = "Email required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teamData.teamLeaderEmail)) {
-          newErrors.teamLeaderEmail = "Invalid email";
+        const emailResult = emailSchema.safeParse(teamData.teamLeaderEmail.trim());
+        if (!emailResult.success) {
+          newErrors.teamLeaderEmail = emailResult.error.errors[0].message;
         }
         break;
       case 3:
-        if (!teamData.institution.trim()) {
+        const instResult = institutionSchema.safeParse(teamData.institution.trim());
+        if (!instResult.success) {
           newErrors.institution = "Institution required";
         }
         break;
@@ -97,12 +102,51 @@ export default function TeamRegistration() {
 
   const handleSubmit = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    
+    try {
+      // Insert team into database
+      const { data: teamResult, error: teamError } = await supabase
+        .from("teams")
+        .insert({
+          team_id: teamId,
+          name: teamData.teamName.trim(),
+          leader_name: teamData.teamLeader.trim(),
+          leader_email: teamData.teamLeaderEmail.trim(),
+          team_size: parseInt(teamData.teamSize),
+          institution: teamData.institution.trim(),
+        })
+        .select()
+        .single();
+
+      if (teamError) {
+        if (teamError.message.includes("duplicate")) {
+          toast.error("Team name already exists. Please choose another.");
+        } else {
+          toast.error("Failed to register team. Please try again.");
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Insert team leader as first member
+      await supabase.from("team_members").insert({
+        team_id: teamResult.id,
+        name: teamData.teamLeader.trim(),
+        email: teamData.teamLeaderEmail.trim(),
+      });
+
+      // Store team ID in session for the vault
+      sessionStorage.setItem("novus_team_id", teamId);
+      sessionStorage.setItem("novus_team_name", teamData.teamName);
+
       toast.success("Team registered successfully!");
       navigate("/vault");
-    }, 2000);
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (field: keyof TeamData, value: string) => {
@@ -375,7 +419,7 @@ export default function TeamRegistration() {
           {/* Navigation */}
           <div className="flex gap-3 mt-8">
             {currentStep > 1 && (
-              <button onClick={handleBack} className="cyber-btn flex-1">
+              <button onClick={handleBack} className="cyber-btn flex-1" disabled={loading}>
                 Back
               </button>
             )}
