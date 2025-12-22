@@ -168,18 +168,35 @@ export default function Login() {
         
         sessionStorage.setItem("novus_team_name", formData.teamName.trim());
         
+        // Get team and check if members already exist
         const { data: team } = await supabase
           .from("teams")
-          .select("team_id")
+          .select("id, team_id")
           .eq("name", formData.teamName.trim())
           .maybeSingle();
         
         if (team) {
           sessionStorage.setItem("novus_team_id", team.team_id);
+          
+          // Check if team already has members saved
+          const { data: members } = await supabase
+            .from("team_members")
+            .select("id")
+            .eq("team_id", team.id)
+            .limit(1);
+          
+          toast.success("Access granted");
+          
+          // If members exist, skip to rules; otherwise go to team members page
+          if (members && members.length > 0) {
+            navigate("/rules");
+          } else {
+            navigate("/team-members");
+          }
+        } else {
+          toast.success("Access granted");
+          navigate("/team-members");
         }
-        
-        toast.success("Access granted");
-        navigate("/team-members");
       } else {
         // Register mode
         const teamEmail = `${formData.teamName.toLowerCase().replace(/[^a-z0-9]/g, "_")}@novus.local`;
