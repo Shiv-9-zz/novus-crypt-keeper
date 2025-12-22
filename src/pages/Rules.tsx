@@ -84,7 +84,7 @@ export default function Rules() {
 
   const handleProceed = () => {
     if (accepted) {
-      navigate("/vault");
+      navigate("/team-members");
     }
   };
 

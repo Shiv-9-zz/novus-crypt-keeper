@@ -11,6 +11,7 @@ import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Rules from "@/pages/Rules";
 import TeamRegistration from "@/pages/TeamRegistration";
+import TeamMembers from "@/pages/TeamMembers";
 import ChallengeVault from "@/pages/ChallengeVault";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/NotFound";
@@ -64,6 +65,7 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/rules" element={<Rules />} />
                 <Route path="/team" element={<TeamRegistration />} />
+                <Route path="/team-members" element={<TeamMembers />} />
                 <Route path="/vault" element={<ChallengeVault />} />
                 <Route path="/admin" element={<Admin />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
