@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
-import { HauntedEffects } from "@/components/HauntedEffects";
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -282,7 +282,6 @@ export default function ChallengeVault() {
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <CyberBackground />
-      <HauntedEffects />
 
       {/* Success Overlay */}
       <AnimatePresence>
