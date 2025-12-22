@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        setLoading(false);
         
         // Check admin status after auth change
         if (session?.user) {
