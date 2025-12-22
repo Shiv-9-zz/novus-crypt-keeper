@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Shield, Skull, Terminal, Lock, Eye, Binary, ChevronRight } from "lucide-react";
+import { Shield, Skull, Terminal, Lock, Eye, Binary, ChevronRight, Users } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 
@@ -97,12 +97,21 @@ export default function Landing() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/team")}
               className="cyber-btn-filled text-lg px-8 py-4 flex items-center justify-center gap-2"
             >
-              <Shield className="w-5 h-5" />
-              Access System
+              <Users className="w-5 h-5" />
+              Register Team
               <ChevronRight className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/login")}
+              className="cyber-btn text-lg px-8 py-4 flex items-center justify-center gap-2"
+            >
+              <Shield className="w-5 h-5" />
+              Team Login
             </motion.button>
           </motion.div>
         </motion.div>
@@ -207,12 +216,20 @@ export default function Landing() {
             <p className="text-muted-foreground mb-8 font-mono">
               Join hackers from across India. Prove your skills.
             </p>
-            <button
-              onClick={() => navigate("/login")}
-              className="cyber-btn-filled text-lg px-10 py-4"
-            >
-              Initialize Access
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate("/team")}
+                className="cyber-btn-filled text-lg px-10 py-4"
+              >
+                Register Now
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="cyber-btn text-lg px-10 py-4"
+              >
+                Login
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
