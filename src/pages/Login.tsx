@@ -4,59 +4,84 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
-
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
-const emailSchema = z.string().email("Invalid email format").max(255);
+const teamNameSchema = z.string().min(3, "Min 3 characters").max(30, "Max 30 characters");
 const passwordSchema = z.string().min(6, "Min 6 characters").max(128);
+const emailSchema = z.string().email("Invalid email format").max(255);
 
-type AuthMode = "register" | "login" | "admin";
+type AuthMode = "login" | "admin";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, isAdmin, signIn, signUp, loading: authLoading } = useAuth();
+  const { user, isAdmin, signIn, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    teamName: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authLoading && user) {
-      // If admin mode and user is admin, go to admin panel
       if (isAdmin) {
         navigate("/admin");
       } else {
-        navigate("/team");
+        // Get team info from the teams table
+        fetchTeamInfo();
       }
     }
   }, [user, isAdmin, authLoading, navigate]);
+
+  const fetchTeamInfo = async () => {
+    if (!user?.email) return;
+    
+    // Extract team name from email (teamname@novus.local)
+    const teamNameFromEmail = user.email.split("@")[0].replace(/_/g, " ");
+    
+    // Find the team
+    const { data: team } = await supabase
+      .from("teams")
+      .select("team_id, name")
+      .ilike("name", teamNameFromEmail.replace(/ /g, "_"))
+      .maybeSingle();
+    
+    if (team) {
+      sessionStorage.setItem("novus_team_id", team.team_id);
+      sessionStorage.setItem("novus_team_name", team.name);
+    }
+    
+    navigate("/team-members");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
-    // Validate email
-    const emailResult = emailSchema.safeParse(formData.email.trim());
-    if (!emailResult.success) {
-      newErrors.email = emailResult.error.errors[0].message;
+    if (mode === "admin") {
+      // Validate admin email
+      const emailResult = emailSchema.safeParse(formData.email.trim());
+      if (!emailResult.success) {
+        newErrors.email = emailResult.error.errors[0].message;
+      }
+    } else {
+      // Validate team name
+      const teamNameResult = teamNameSchema.safeParse(formData.teamName.trim());
+      if (!teamNameResult.success) {
+        newErrors.teamName = teamNameResult.error.errors[0].message;
+      }
     }
 
     // Validate password
     const passwordResult = passwordSchema.safeParse(formData.password);
     if (!passwordResult.success) {
       newErrors.password = passwordResult.error.errors[0].message;
-    }
-
-    if (mode === "register" && formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -69,7 +94,7 @@ export default function Login() {
 
     try {
       if (mode === "admin") {
-        // First setup admin via edge function (creates user if needed and adds to admin_users)
+        // Admin login with email
         const { data: setupData, error: setupError } = await supabase.functions.invoke("setup-admin", {
           body: { email: formData.email.trim(), password: formData.password },
         });
@@ -80,7 +105,6 @@ export default function Login() {
           return;
         }
 
-        // Now sign in as admin
         const { error } = await signIn(formData.email.trim(), formData.password);
         if (error) {
           toast.error("Admin authentication failed");
@@ -89,34 +113,38 @@ export default function Login() {
         }
         toast.success("Admin access granted");
         navigate("/admin");
-      } else if (mode === "login") {
-        const { error } = await signIn(formData.email.trim(), formData.password);
+      } else {
+        // Team login with team name
+        // Convert team name to email format
+        const teamEmail = `${formData.teamName.toLowerCase().replace(/[^a-z0-9]/g, "_")}@novus.local`;
+        
+        const { error } = await signIn(teamEmail, formData.password);
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
-            toast.error("Invalid email or password");
+            toast.error("Invalid team name or password");
           } else {
             toast.error(error.message);
           }
           setLoading(false);
           return;
         }
+        
+        // Store team info
+        sessionStorage.setItem("novus_team_name", formData.teamName.trim());
+        
+        // Get team_id from database
+        const { data: team } = await supabase
+          .from("teams")
+          .select("team_id")
+          .eq("name", formData.teamName.trim())
+          .maybeSingle();
+        
+        if (team) {
+          sessionStorage.setItem("novus_team_id", team.team_id);
+        }
+        
         toast.success("Access granted");
-        navigate("/team");
-      } else {
-        // Register mode
-        const { error } = await signUp(formData.email.trim(), formData.password);
-        if (error) {
-          if (error.message.includes("already registered")) {
-            toast.error("Email already registered. Please login instead.");
-          } else {
-            toast.error(error.message);
-          }
-          setLoading(false);
-          return;
-        }
-        toast.success("Registration complete! You can now login.");
-        setMode("login");
-        setFormData({ ...formData, password: "", confirmPassword: "" });
+        navigate("/team-members");
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -136,7 +164,7 @@ export default function Login() {
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
     setErrors({});
-    setFormData({ email: "", password: "", confirmPassword: "" });
+    setFormData({ teamName: "", email: "", password: "" });
   };
 
   if (authLoading) {
@@ -150,8 +178,6 @@ export default function Login() {
 
   const getModeTitle = () => {
     switch (mode) {
-      case "register":
-        return "TEAM REGISTRATION";
       case "login":
         return "TEAM LOGIN";
       case "admin":
@@ -161,8 +187,6 @@ export default function Login() {
 
   const getModeIcon = () => {
     switch (mode) {
-      case "register":
-        return <Users className="w-4 h-4" />;
       case "login":
         return <Lock className="w-4 h-4" />;
       case "admin":
@@ -206,18 +230,6 @@ export default function Login() {
           <div className="flex gap-2 mb-6">
             <button
               type="button"
-              onClick={() => switchMode("register")}
-              className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
-                mode === "register"
-                  ? "text-primary border-b-2 border-primary bg-primary/10"
-                  : "text-muted-foreground border-b border-border hover:text-primary/70"
-              }`}
-            >
-              <Users className="w-3 h-3" />
-              Register
-            </button>
-            <button
-              type="button"
               onClick={() => switchMode("login")}
               className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
                 mode === "login"
@@ -225,8 +237,8 @@ export default function Login() {
                   : "text-muted-foreground border-b border-border hover:text-primary/70"
               }`}
             >
-              <Lock className="w-3 h-3" />
-              Login
+              <Users className="w-3 h-3" />
+              Team Login
             </button>
             <button
               type="button"
@@ -278,31 +290,58 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                {mode === "admin" ? "Admin Email" : "Email Address"}
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`terminal-input w-full ${errors.email ? "border-destructive" : ""}`}
-                placeholder={mode === "admin" ? "admin@novus.ctf" : "agent@novus.ctf"}
-                autoComplete="email"
-              />
-              {errors.email && (
-                <motion.p
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-destructive text-xs mt-1 flex items-center gap-1"
-                >
-                  <AlertTriangle className="w-3 h-3" />
-                  {errors.email}
-                </motion.p>
-              )}
-            </div>
+            {/* Team Name or Admin Email */}
+            {mode === "login" ? (
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
+                  Team Name
+                </label>
+                <input
+                  type="text"
+                  name="teamName"
+                  value={formData.teamName}
+                  onChange={handleChange}
+                  className={`terminal-input w-full ${errors.teamName ? "border-destructive" : ""}`}
+                  placeholder="Enter your team name"
+                  autoComplete="username"
+                />
+                {errors.teamName && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-destructive text-xs mt-1 flex items-center gap-1"
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    {errors.teamName}
+                  </motion.p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
+                  Admin Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`terminal-input w-full ${errors.email ? "border-destructive" : ""}`}
+                  placeholder="admin@novus.ctf"
+                  autoComplete="email"
+                />
+                {errors.email && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-destructive text-xs mt-1 flex items-center gap-1"
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    {errors.email}
+                  </motion.p>
+                )}
+              </div>
+            )}
 
             {/* Password */}
             <div>
@@ -317,7 +356,7 @@ export default function Login() {
                   onChange={handleChange}
                   className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
                   placeholder="••••••••"
-                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -338,40 +377,6 @@ export default function Login() {
                 </motion.p>
               )}
             </div>
-
-            {/* Confirm Password - only for register */}
-            <AnimatePresence>
-              {mode === "register" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
-                  <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`terminal-input w-full ${errors.confirmPassword ? "border-destructive" : ""}`}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                  />
-                  {errors.confirmPassword && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-destructive text-xs mt-1 flex items-center gap-1"
-                    >
-                      <AlertTriangle className="w-3 h-3" />
-                      {errors.confirmPassword}
-                    </motion.p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Submit */}
             <motion.button
@@ -399,7 +404,6 @@ export default function Login() {
                 <>
                   {getModeIcon()}
                   <span>
-                    {mode === "register" && "Create Account"}
                     {mode === "login" && "Access System"}
                     {mode === "admin" && "Admin Login"}
                   </span>
@@ -407,6 +411,21 @@ export default function Login() {
               )}
             </motion.button>
           </form>
+
+          {/* Register link for teams */}
+          {mode === "login" && (
+            <div className="mt-6 pt-4 border-t border-border text-center">
+              <p className="text-xs text-muted-foreground mb-2">
+                New team? Register first
+              </p>
+              <button
+                onClick={() => navigate("/team")}
+                className="text-primary text-sm hover:underline font-mono"
+              >
+                [ REGISTER TEAM ]
+              </button>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="mt-6 pt-4 border-t border-border text-center">

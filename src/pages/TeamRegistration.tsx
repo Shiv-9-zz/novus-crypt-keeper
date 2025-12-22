@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Users, Building2, User, Hash, AlertTriangle, Check, ChevronRight } from "lucide-react";
+import { Users, Building2, User, Hash, AlertTriangle, Check, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ const teamNameSchema = z.string().min(3, "Min 3 characters").max(30, "Max 30 cha
 const emailSchema = z.string().email("Invalid email");
 const nameSchema = z.string().min(1, "Required");
 const institutionSchema = z.string().min(1, "Required");
+const passwordSchema = z.string().min(6, "Min 6 characters").max(128, "Max 128 characters");
 
 interface TeamData {
   teamName: string;
@@ -19,7 +20,8 @@ interface TeamData {
   teamLeaderEmail: string;
   teamSize: string;
   institution: string;
-  members: string[];
+  password: string;
+  confirmPassword: string;
 }
 
 const steps = [
@@ -35,6 +37,7 @@ export default function TeamRegistration() {
   const [loading, setLoading] = useState(false);
   const [teamId, setTeamId] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
   
   const [teamData, setTeamData] = useState<TeamData>({
     teamName: "",
@@ -42,7 +45,8 @@ export default function TeamRegistration() {
     teamLeaderEmail: "",
     teamSize: "2",
     institution: "",
-    members: ["", "", ""],
+    password: "",
+    confirmPassword: "",
   });
 
   const generateTeamId = () => {
@@ -63,6 +67,14 @@ export default function TeamRegistration() {
         }
         if (!teamData.teamSize) {
           newErrors.teamSize = "Select team size";
+        }
+        // Validate password
+        const passwordResult = passwordSchema.safeParse(teamData.password);
+        if (!passwordResult.success) {
+          newErrors.password = passwordResult.error.errors[0].message;
+        }
+        if (teamData.password !== teamData.confirmPassword) {
+          newErrors.confirmPassword = "Passwords do not match";
         }
         break;
       case 2:
@@ -104,6 +116,28 @@ export default function TeamRegistration() {
     setLoading(true);
     
     try {
+      // Generate email from team name for Supabase auth
+      const teamEmail = `${teamData.teamName.toLowerCase().replace(/[^a-z0-9]/g, "_")}@novus.local`;
+      
+      // Create Supabase auth user with team email
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: teamEmail,
+        password: teamData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          toast.error("Team name already registered. Please choose another.");
+        } else {
+          toast.error(authError.message);
+        }
+        setLoading(false);
+        return;
+      }
+
       // Insert team into database
       const { data: teamResult, error: teamError } = await supabase
         .from("teams")
@@ -231,13 +265,13 @@ export default function TeamRegistration() {
               <div>
                 <h2 className="text-xl font-bold text-primary mb-1">Team Information</h2>
                 <p className="text-sm text-muted-foreground">
-                  Choose a unique team name and specify your team size
+                  Choose a unique team name and create your login password
                 </p>
               </div>
 
               <div>
                 <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                  Team Name
+                  Team Name (This will be your login ID)
                 </label>
                 <input
                   type="text"
@@ -256,6 +290,53 @@ export default function TeamRegistration() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {teamData.teamName.length}/30 characters
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={teamData.password}
+                    onChange={(e) => handleChange("password", e.target.value)}
+                    className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
+                    placeholder="Min 6 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={teamData.confirmPassword}
+                  onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                  className={`terminal-input w-full ${errors.confirmPassword ? "border-destructive" : ""}`}
+                  placeholder="Confirm your password"
+                />
+                {errors.confirmPassword && (
+                  <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -385,6 +466,22 @@ export default function TeamRegistration() {
                 <p className="text-2xl font-bold text-primary text-glow font-mono">{teamId}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Save this ID - you'll need it for support queries
+                </p>
+              </div>
+
+              {/* Login Info */}
+              <div className="p-4 bg-accent/10 border border-accent/30 rounded">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lock className="w-4 h-4 text-accent" />
+                  <span className="text-xs text-muted-foreground font-mono uppercase">
+                    Login Credentials
+                  </span>
+                </div>
+                <p className="text-sm text-card-foreground">
+                  Team Name: <span className="font-bold text-primary">{teamData.teamName}</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use your team name and password to login
                 </p>
               </div>
 
