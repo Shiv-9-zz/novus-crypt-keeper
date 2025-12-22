@@ -185,22 +185,18 @@ export default function Rules() {
           className="mt-6 space-y-4"
         >
           {/* Checkbox */}
-          <label
-            className={`flex items-start gap-3 p-4 rounded border transition-all cursor-pointer ${
+          <button
+            type="button"
+            onClick={() => hasScrolledToBottom && setAccepted(!accepted)}
+            disabled={!hasScrolledToBottom}
+            className={`flex items-start gap-3 p-4 rounded border transition-all text-left w-full ${
               hasScrolledToBottom
-                ? "border-border hover:border-primary/50"
+                ? "border-border hover:border-primary/50 cursor-pointer"
                 : "border-border/50 opacity-50 cursor-not-allowed"
             } ${accepted ? "border-primary bg-primary/5" : ""}`}
           >
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => hasScrolledToBottom && setAccepted(e.target.checked)}
-              disabled={!hasScrolledToBottom}
-              className="sr-only"
-            />
             <div
-              className={`w-5 h-5 border rounded flex items-center justify-center transition-all ${
+              className={`w-5 h-5 border rounded flex items-center justify-center flex-shrink-0 transition-all ${
                 accepted ? "bg-primary border-primary" : "border-border"
               }`}
             >
@@ -210,7 +206,7 @@ export default function Rules() {
               I have read and agree to abide by all competition rules and protocols. I understand that
               violation of any rule may result in disqualification.
             </span>
-          </label>
+          </button>
 
           {/* Warning */}
           {!hasScrolledToBottom && (
