@@ -140,7 +140,7 @@ export default function TeamRegistration() {
       sessionStorage.setItem("novus_team_name", teamData.teamName);
 
       toast.success("Team registered successfully!");
-      navigate("/rules");
+      navigate("/team-members");
     } catch (error) {
       console.error("Registration error:", error);
       toast.error("An error occurred. Please try again.");

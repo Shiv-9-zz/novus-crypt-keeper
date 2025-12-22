@@ -141,7 +141,7 @@ export default function TeamMembers() {
         .eq("id", teamData.id);
 
       toast.success("Team members added successfully!");
-      navigate("/vault");
+      navigate("/rules");
     } catch (error: any) {
       console.error("Error adding team members:", error);
       toast.error(error.message || "Failed to add team members");
@@ -151,7 +151,7 @@ export default function TeamMembers() {
   };
 
   const handleSkip = () => {
-    navigate("/vault");
+    navigate("/rules");
   };
 
   return (
