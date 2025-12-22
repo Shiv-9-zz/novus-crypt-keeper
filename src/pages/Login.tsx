@@ -1,21 +1,24 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, AlertTriangle, Shield } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { HauntedEffects } from "@/components/HauntedEffects";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Invalid email format").max(255);
 const passwordSchema = z.string().min(6, "Min 6 characters").max(128);
 
+type AuthMode = "register" | "login" | "admin";
+
 export default function Login() {
   const navigate = useNavigate();
-  const { user, signIn, signUp, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const { user, isAdmin, signIn, signUp, loading: authLoading } = useAuth();
+  const [mode, setMode] = useState<AuthMode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,9 +30,14 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/rules");
+      // If admin mode and user is admin, go to admin panel
+      if (isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate("/rules");
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, isAdmin, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +68,28 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (mode === "login") {
+      if (mode === "admin") {
+        // First setup admin via edge function (creates user if needed and adds to admin_users)
+        const { data: setupData, error: setupError } = await supabase.functions.invoke("setup-admin", {
+          body: { email: formData.email.trim(), password: formData.password },
+        });
+
+        if (setupError || setupData?.error) {
+          toast.error(setupData?.error || "Invalid admin credentials");
+          setLoading(false);
+          return;
+        }
+
+        // Now sign in as admin
+        const { error } = await signIn(formData.email.trim(), formData.password);
+        if (error) {
+          toast.error("Admin authentication failed");
+          setLoading(false);
+          return;
+        }
+        toast.success("Admin access granted");
+        navigate("/admin");
+      } else if (mode === "login") {
         const { error } = await signIn(formData.email.trim(), formData.password);
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
@@ -74,6 +103,7 @@ export default function Login() {
         toast.success("Access granted");
         navigate("/rules");
       } else {
+        // Register mode
         const { error } = await signUp(formData.email.trim(), formData.password);
         if (error) {
           if (error.message.includes("already registered")) {
@@ -103,6 +133,12 @@ export default function Login() {
     }
   };
 
+  const switchMode = (newMode: AuthMode) => {
+    setMode(newMode);
+    setErrors({});
+    setFormData({ email: "", password: "", confirmPassword: "" });
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -112,13 +148,33 @@ export default function Login() {
     );
   }
 
+  const getModeTitle = () => {
+    switch (mode) {
+      case "register":
+        return "TEAM REGISTRATION";
+      case "login":
+        return "TEAM LOGIN";
+      case "admin":
+        return "ADMIN ACCESS";
+    }
+  };
+
+  const getModeIcon = () => {
+    switch (mode) {
+      case "register":
+        return <Users className="w-4 h-4" />;
+      case "login":
+        return <Lock className="w-4 h-4" />;
+      case "admin":
+        return <Crown className="w-4 h-4" />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Live animated background */}
       <CyberBackground />
       <HauntedEffects />
       
-      {/* Overlay gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent z-[1]" />
 
       <motion.div
@@ -147,37 +203,86 @@ export default function Login() {
           transition={{ delay: 0.2 }}
           className="cyber-card p-8 glitch-box noise"
         >
-          {/* Mode toggle */}
-          <div className="flex gap-4 mb-6">
+          {/* Mode tabs */}
+          <div className="flex gap-2 mb-6">
             <button
               type="button"
-              onClick={() => setMode("login")}
-              className={`flex-1 py-2 text-sm font-mono uppercase tracking-wider transition-all ${
-                mode === "login"
-                  ? "text-primary border-b-2 border-primary"
+              onClick={() => switchMode("register")}
+              className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                mode === "register"
+                  ? "text-primary border-b-2 border-primary bg-primary/10"
                   : "text-muted-foreground border-b border-border hover:text-primary/70"
               }`}
             >
+              <Users className="w-3 h-3" />
+              Register
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                mode === "login"
+                  ? "text-primary border-b-2 border-primary bg-primary/10"
+                  : "text-muted-foreground border-b border-border hover:text-primary/70"
+              }`}
+            >
+              <Lock className="w-3 h-3" />
               Login
             </button>
             <button
               type="button"
-              onClick={() => setMode("register")}
-              className={`flex-1 py-2 text-sm font-mono uppercase tracking-wider transition-all ${
-                mode === "register"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground border-b border-border hover:text-primary/70"
+              onClick={() => switchMode("admin")}
+              className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                mode === "admin"
+                  ? "text-destructive border-b-2 border-destructive bg-destructive/10"
+                  : "text-muted-foreground/60 border-b border-border hover:text-destructive/70"
               }`}
             >
-              Register
+              <Crown className="w-3 h-3" />
+              Admin
             </button>
           </div>
+
+          {/* Mode indicator */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={mode}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className={`text-center mb-4 py-2 rounded border ${
+                mode === "admin" 
+                  ? "border-destructive/30 bg-destructive/5" 
+                  : "border-primary/30 bg-primary/5"
+              }`}
+            >
+              <p className={`text-xs font-mono flex items-center justify-center gap-2 ${
+                mode === "admin" ? "text-destructive" : "text-primary"
+              }`}>
+                {getModeIcon()}
+                {getModeTitle()}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Admin warning */}
+          {mode === "admin" && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mb-4 p-3 rounded border border-destructive/30 bg-destructive/5"
+            >
+              <p className="text-xs text-destructive/80 font-mono text-center">
+                ⚠ RESTRICTED ACCESS - AUTHORIZED PERSONNEL ONLY
+              </p>
+            </motion.div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
               <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                Email Address
+                {mode === "admin" ? "Admin Email" : "Email Address"}
               </label>
               <input
                 type="email"
@@ -185,7 +290,7 @@ export default function Login() {
                 value={formData.email}
                 onChange={handleChange}
                 className={`terminal-input w-full ${errors.email ? "border-destructive" : ""}`}
-                placeholder="agent@novus.ctf"
+                placeholder={mode === "admin" ? "admin@novus.ctf" : "agent@novus.ctf"}
                 autoComplete="email"
               />
               {errors.email && (
@@ -213,7 +318,7 @@ export default function Login() {
                   onChange={handleChange}
                   className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
                   placeholder="••••••••"
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
                 />
                 <button
                   type="button"
@@ -235,37 +340,39 @@ export default function Login() {
               )}
             </div>
 
-            {/* Confirm Password */}
-            {mode === "register" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`terminal-input w-full ${errors.confirmPassword ? "border-destructive" : ""}`}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                />
-                {errors.confirmPassword && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-destructive text-xs mt-1 flex items-center gap-1"
-                  >
-                    <AlertTriangle className="w-3 h-3" />
-                    {errors.confirmPassword}
-                  </motion.p>
-                )}
-              </motion.div>
-            )}
+            {/* Confirm Password - only for register */}
+            <AnimatePresence>
+              {mode === "register" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.confirmPassword ? "border-destructive" : ""}`}
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                  {errors.confirmPassword && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-destructive text-xs mt-1 flex items-center gap-1"
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.confirmPassword}
+                    </motion.p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Submit */}
             <motion.button
@@ -273,7 +380,11 @@ export default function Login() {
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="cyber-btn-filled w-full flex items-center justify-center gap-2"
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 font-mono text-sm uppercase tracking-wider transition-all ${
+                mode === "admin"
+                  ? "bg-destructive/20 border border-destructive text-destructive hover:bg-destructive/30"
+                  : "cyber-btn-filled"
+              }`}
             >
               {loading ? (
                 <>
@@ -287,8 +398,12 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  <Shield className="w-4 h-4" />
-                  <span>{mode === "login" ? "Access System" : "Create Account"}</span>
+                  {getModeIcon()}
+                  <span>
+                    {mode === "register" && "Create Account"}
+                    {mode === "login" && "Access System"}
+                    {mode === "admin" && "Admin Login"}
+                  </span>
                 </>
               )}
             </motion.button>
@@ -297,8 +412,14 @@ export default function Login() {
           {/* Footer */}
           <div className="mt-6 pt-4 border-t border-border text-center">
             <p className="text-xs text-muted-foreground">
-              By proceeding, you accept the{" "}
-              <span className="text-primary cursor-pointer hover:underline">Terms of Engagement</span>
+              {mode === "admin" ? (
+                "Admin access is monitored and logged"
+              ) : (
+                <>
+                  By proceeding, you accept the{" "}
+                  <span className="text-primary cursor-pointer hover:underline">Terms of Engagement</span>
+                </>
+              )}
             </p>
           </div>
         </motion.div>
