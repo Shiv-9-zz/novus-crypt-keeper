@@ -29,14 +29,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if admin user exists
+    // Check if admin user exists (case-insensitive comparison)
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingAdmin = existingUsers?.users?.find(u => u.email === ADMIN_EMAIL);
+    const existingAdmin = existingUsers?.users?.find(
+      u => u.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+    );
 
     let userId: string;
 
     if (existingAdmin) {
       userId = existingAdmin.id;
+      console.log("Admin user already exists:", userId);
     } else {
       // Create admin user
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -46,13 +49,31 @@ Deno.serve(async (req) => {
       });
 
       if (createError) {
-        return new Response(
-          JSON.stringify({ error: createError.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // If user already exists error, try to find them again
+        if (createError.message.includes("already been registered")) {
+          const { data: retryUsers } = await supabase.auth.admin.listUsers();
+          const retryAdmin = retryUsers?.users?.find(
+            u => u.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+          );
+          if (retryAdmin) {
+            userId = retryAdmin.id;
+            console.log("Found admin on retry:", userId);
+          } else {
+            return new Response(
+              JSON.stringify({ error: "Admin user exists but could not be found" }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        } else {
+          return new Response(
+            JSON.stringify({ error: createError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        userId = newUser.user!.id;
+        console.log("Created new admin user:", userId);
       }
-
-      userId = newUser.user!.id;
     }
 
     // Check if already in admin_users
