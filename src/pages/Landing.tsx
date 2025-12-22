@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Skull, Terminal, Lock, Eye, Binary, ChevronRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
-import { HauntedEffects } from "@/components/HauntedEffects";
+
 
 const features = [
   {
@@ -42,7 +42,6 @@ export default function Landing() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Live animated background */}
       <CyberBackground />
-      <HauntedEffects />
       <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent z-[1]" />
       
       {/* Animated corner accents */}
