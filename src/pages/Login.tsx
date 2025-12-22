@@ -34,7 +34,7 @@ export default function Login() {
       if (isAdmin) {
         navigate("/admin");
       } else {
-        navigate("/rules");
+        navigate("/team");
       }
     }
   }, [user, isAdmin, authLoading, navigate]);
@@ -101,7 +101,7 @@ export default function Login() {
           return;
         }
         toast.success("Access granted");
-        navigate("/rules");
+        navigate("/team");
       } else {
         // Register mode
         const { error } = await signUp(formData.email.trim(), formData.password);
