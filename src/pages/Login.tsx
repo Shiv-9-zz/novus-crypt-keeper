@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown, Building2, User } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown, Building2, User, LogOut, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ type AuthMode = "register" | "login" | "admin";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, isAdmin, signIn, signUp, loading: authLoading } = useAuth();
+  const { user, isAdmin, signIn, signUp, signOut, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<AuthMode>("register");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,15 +33,21 @@ export default function Login() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      if (isAdmin) {
-        navigate("/admin");
-      } else {
-        fetchTeamInfo();
-      }
+  // Don't auto-redirect - let user choose to sign out or continue
+  const handleSignOut = async () => {
+    await signOut();
+    sessionStorage.removeItem("novus_team_id");
+    sessionStorage.removeItem("novus_team_name");
+    toast.success("Signed out successfully");
+  };
+
+  const handleContinue = async () => {
+    if (isAdmin) {
+      navigate("/admin");
+    } else {
+      await fetchTeamInfo();
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  };
 
   const fetchTeamInfo = async () => {
     if (!user?.email) return;
@@ -262,6 +268,57 @@ export default function Login() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <CyberBackground />
         <div className="text-primary font-mono animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
+  // If user is already logged in, show options
+  if (user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+        <CyberBackground />
+        <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent z-[1]" />
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md relative z-10"
+        >
+          <div className="text-center mb-6">
+            <Logo size="lg" />
+          </div>
+          
+          <div className="cyber-card p-6 md:p-8">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold text-primary mb-2">SESSION ACTIVE</h2>
+              <p className="text-muted-foreground text-sm">
+                You are currently logged in{isAdmin ? " as admin" : ""}
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <motion.button
+                onClick={handleContinue}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full cyber-btn cyber-btn-filled flex items-center justify-center gap-2"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Continue to {isAdmin ? "Admin Panel" : "Challenge Vault"}
+              </motion.button>
+              
+              <motion.button
+                onClick={handleSignOut}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full cyber-btn flex items-center justify-center gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out & Start Fresh
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
