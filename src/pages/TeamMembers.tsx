@@ -33,7 +33,7 @@ export default function TeamMembers() {
     
     if (!storedTeamId) {
       toast.error("No team found. Please register first.");
-      navigate("/team");
+      navigate("/login");
       return;
     }
     
