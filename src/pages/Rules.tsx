@@ -89,13 +89,13 @@ export default function Rules() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden">
       <CyberBackground />
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-4 md:p-6 border-b border-border"
+        className="flex-shrink-0 p-4 md:p-6 border-b border-border"
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Logo size="sm" animate={false} />
@@ -107,12 +107,12 @@ export default function Rules() {
       </motion.header>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 md:p-6">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 md:p-6 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mb-6"
+          className="flex-shrink-0 mb-4"
         >
           <h1 className="text-2xl md:text-3xl font-bold text-primary text-glow mb-2">
             COMPETITION PROTOCOL
@@ -122,16 +122,16 @@ export default function Rules() {
           </p>
         </motion.div>
 
-        {/* Rules container */}
+        {/* Rules container - takes remaining space */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="flex-1 relative"
+          className="flex-1 relative min-h-0"
         >
           <div
             ref={scrollRef}
-            className="cyber-card p-6 h-[50vh] md:h-[55vh] overflow-y-auto"
+            className="cyber-card p-6 h-full overflow-y-auto"
           >
             {rules.map((rule, index) => (
               <motion.div
@@ -177,19 +177,19 @@ export default function Rules() {
           )}
         </motion.div>
 
-        {/* Acceptance section */}
+        {/* Acceptance section - fixed at bottom */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-6 space-y-4"
+          className="flex-shrink-0 mt-4 space-y-3"
         >
           {/* Checkbox */}
           <button
             type="button"
             onClick={() => hasScrolledToBottom && setAccepted(!accepted)}
             disabled={!hasScrolledToBottom}
-            className={`flex items-start gap-3 p-4 rounded border transition-all text-left w-full ${
+            className={`flex items-start gap-3 p-3 rounded border transition-all text-left w-full ${
               hasScrolledToBottom
                 ? "border-border hover:border-primary/50 cursor-pointer"
                 : "border-border/50 opacity-50 cursor-not-allowed"
