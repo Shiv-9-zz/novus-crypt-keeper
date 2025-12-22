@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown, Building2, User } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 import { toast } from "sonner";
@@ -12,19 +12,24 @@ import { z } from "zod";
 const teamNameSchema = z.string().min(3, "Min 3 characters").max(30, "Max 30 characters");
 const passwordSchema = z.string().min(6, "Min 6 characters").max(128);
 const emailSchema = z.string().email("Invalid email format").max(255);
+const nameSchema = z.string().min(1, "Required");
 
-type AuthMode = "login" | "admin";
+type AuthMode = "register" | "login" | "admin";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, isAdmin, signIn, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<AuthMode>("login");
+  const { user, isAdmin, signIn, signUp, loading: authLoading } = useAuth();
+  const [mode, setMode] = useState<AuthMode>("register");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     teamName: "",
-    email: "",
     password: "",
+    confirmPassword: "",
+    leaderName: "",
+    leaderEmail: "",
+    institution: "",
+    adminEmail: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -33,7 +38,6 @@ export default function Login() {
       if (isAdmin) {
         navigate("/admin");
       } else {
-        // Get team info from the teams table
         fetchTeamInfo();
       }
     }
@@ -42,14 +46,12 @@ export default function Login() {
   const fetchTeamInfo = async () => {
     if (!user?.email) return;
     
-    // Extract team name from email (teamname@novus.local)
-    const teamNameFromEmail = user.email.split("@")[0].replace(/_/g, " ");
+    const teamNameFromEmail = user.email.split("@")[0];
     
-    // Find the team
     const { data: team } = await supabase
       .from("teams")
       .select("team_id, name")
-      .ilike("name", teamNameFromEmail.replace(/ /g, "_"))
+      .ilike("name", teamNameFromEmail.replace(/_/g, "%"))
       .maybeSingle();
     
     if (team) {
@@ -60,28 +62,60 @@ export default function Login() {
     navigate("/team-members");
   };
 
+  const generateTeamId = () => {
+    const prefix = "NVS";
+    const year = new Date().getFullYear();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `${prefix}-${year}-${random}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
     if (mode === "admin") {
-      // Validate admin email
-      const emailResult = emailSchema.safeParse(formData.email.trim());
+      const emailResult = emailSchema.safeParse(formData.adminEmail.trim());
       if (!emailResult.success) {
-        newErrors.email = emailResult.error.errors[0].message;
+        newErrors.adminEmail = emailResult.error.errors[0].message;
       }
-    } else {
-      // Validate team name
+      const passwordResult = passwordSchema.safeParse(formData.password);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
+    } else if (mode === "login") {
       const teamNameResult = teamNameSchema.safeParse(formData.teamName.trim());
       if (!teamNameResult.success) {
         newErrors.teamName = teamNameResult.error.errors[0].message;
       }
-    }
-
-    // Validate password
-    const passwordResult = passwordSchema.safeParse(formData.password);
-    if (!passwordResult.success) {
-      newErrors.password = passwordResult.error.errors[0].message;
+      const passwordResult = passwordSchema.safeParse(formData.password);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
+    } else {
+      // Register mode - validate all fields
+      const teamNameResult = teamNameSchema.safeParse(formData.teamName.trim());
+      if (!teamNameResult.success) {
+        newErrors.teamName = teamNameResult.error.errors[0].message;
+      }
+      const passwordResult = passwordSchema.safeParse(formData.password);
+      if (!passwordResult.success) {
+        newErrors.password = passwordResult.error.errors[0].message;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
+      const leaderResult = nameSchema.safeParse(formData.leaderName.trim());
+      if (!leaderResult.success) {
+        newErrors.leaderName = "Leader name required";
+      }
+      const emailResult = emailSchema.safeParse(formData.leaderEmail.trim());
+      if (!emailResult.success) {
+        newErrors.leaderEmail = emailResult.error.errors[0].message;
+      }
+      const instResult = nameSchema.safeParse(formData.institution.trim());
+      if (!instResult.success) {
+        newErrors.institution = "Institution required";
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -94,9 +128,8 @@ export default function Login() {
 
     try {
       if (mode === "admin") {
-        // Admin login with email
         const { data: setupData, error: setupError } = await supabase.functions.invoke("setup-admin", {
-          body: { email: formData.email.trim(), password: formData.password },
+          body: { email: formData.adminEmail.trim(), password: formData.password },
         });
 
         if (setupError || setupData?.error) {
@@ -105,7 +138,7 @@ export default function Login() {
           return;
         }
 
-        const { error } = await signIn(formData.email.trim(), formData.password);
+        const { error } = await signIn(formData.adminEmail.trim(), formData.password);
         if (error) {
           toast.error("Admin authentication failed");
           setLoading(false);
@@ -113,9 +146,7 @@ export default function Login() {
         }
         toast.success("Admin access granted");
         navigate("/admin");
-      } else {
-        // Team login with team name
-        // Convert team name to email format
+      } else if (mode === "login") {
         const teamEmail = `${formData.teamName.toLowerCase().replace(/[^a-z0-9]/g, "_")}@novus.local`;
         
         const { error } = await signIn(teamEmail, formData.password);
@@ -129,10 +160,8 @@ export default function Login() {
           return;
         }
         
-        // Store team info
         sessionStorage.setItem("novus_team_name", formData.teamName.trim());
         
-        // Get team_id from database
         const { data: team } = await supabase
           .from("teams")
           .select("team_id")
@@ -144,6 +173,59 @@ export default function Login() {
         }
         
         toast.success("Access granted");
+        navigate("/team-members");
+      } else {
+        // Register mode
+        const teamEmail = `${formData.teamName.toLowerCase().replace(/[^a-z0-9]/g, "_")}@novus.local`;
+        const teamId = generateTeamId();
+        
+        // Create auth user
+        const { error: authError } = await signUp(teamEmail, formData.password);
+        if (authError) {
+          if (authError.message.includes("already registered")) {
+            toast.error("Team name already registered. Please choose another or login.");
+          } else {
+            toast.error(authError.message);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Insert team into database
+        const { data: teamResult, error: teamError } = await supabase
+          .from("teams")
+          .insert({
+            team_id: teamId,
+            name: formData.teamName.trim(),
+            leader_name: formData.leaderName.trim(),
+            leader_email: formData.leaderEmail.trim(),
+            team_size: 2,
+            institution: formData.institution.trim(),
+          })
+          .select()
+          .single();
+
+        if (teamError) {
+          if (teamError.message.includes("duplicate")) {
+            toast.error("Team name already exists. Please choose another.");
+          } else {
+            toast.error("Failed to register team. Please try again.");
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Insert team leader as first member
+        await supabase.from("team_members").insert({
+          team_id: teamResult.id,
+          name: formData.leaderName.trim(),
+          email: formData.leaderEmail.trim(),
+        });
+
+        sessionStorage.setItem("novus_team_id", teamId);
+        sessionStorage.setItem("novus_team_name", formData.teamName.trim());
+
+        toast.success("Team registered successfully!");
         navigate("/team-members");
       }
     } catch (error) {
@@ -164,7 +246,15 @@ export default function Login() {
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
     setErrors({});
-    setFormData({ teamName: "", email: "", password: "" });
+    setFormData({
+      teamName: "",
+      password: "",
+      confirmPassword: "",
+      leaderName: "",
+      leaderEmail: "",
+      institution: "",
+      adminEmail: "",
+    });
   };
 
   if (authLoading) {
@@ -178,6 +268,8 @@ export default function Login() {
 
   const getModeTitle = () => {
     switch (mode) {
+      case "register":
+        return "TEAM REGISTRATION";
       case "login":
         return "TEAM LOGIN";
       case "admin":
@@ -187,6 +279,8 @@ export default function Login() {
 
   const getModeIcon = () => {
     switch (mode) {
+      case "register":
+        return <Users className="w-4 h-4" />;
       case "login":
         return <Lock className="w-4 h-4" />;
       case "admin":
@@ -207,7 +301,7 @@ export default function Login() {
         className="w-full max-w-md relative z-10"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <Logo size="lg" />
           <motion.p
             initial={{ opacity: 0 }}
@@ -224,26 +318,38 @@ export default function Login() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="cyber-card p-8 glitch-box noise"
+          className="cyber-card p-6 md:p-8 glitch-box noise max-h-[75vh] overflow-y-auto"
         >
           {/* Mode tabs */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-1 mb-4">
             <button
               type="button"
-              onClick={() => switchMode("login")}
-              className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
-                mode === "login"
+              onClick={() => switchMode("register")}
+              className={`flex-1 py-2 px-1 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                mode === "register"
                   ? "text-primary border-b-2 border-primary bg-primary/10"
                   : "text-muted-foreground border-b border-border hover:text-primary/70"
               }`}
             >
               <Users className="w-3 h-3" />
-              Team Login
+              Register
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode("login")}
+              className={`flex-1 py-2 px-1 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                mode === "login"
+                  ? "text-primary border-b-2 border-primary bg-primary/10"
+                  : "text-muted-foreground border-b border-border hover:text-primary/70"
+              }`}
+            >
+              <Lock className="w-3 h-3" />
+              Login
             </button>
             <button
               type="button"
               onClick={() => switchMode("admin")}
-              className={`flex-1 py-2 px-2 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+              className={`flex-1 py-2 px-1 text-xs font-mono uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
                 mode === "admin"
                   ? "text-destructive border-b-2 border-destructive bg-destructive/10"
                   : "text-muted-foreground/60 border-b border-border hover:text-destructive/70"
@@ -289,94 +395,255 @@ export default function Login() {
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Team Name or Admin Email */}
-            {mode === "login" ? (
-              <div>
-                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                  Team Name
-                </label>
-                <input
-                  type="text"
-                  name="teamName"
-                  value={formData.teamName}
-                  onChange={handleChange}
-                  className={`terminal-input w-full ${errors.teamName ? "border-destructive" : ""}`}
-                  placeholder="Enter your team name"
-                  autoComplete="username"
-                />
-                {errors.teamName && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-destructive text-xs mt-1 flex items-center gap-1"
-                  >
-                    <AlertTriangle className="w-3 h-3" />
-                    {errors.teamName}
-                  </motion.p>
-                )}
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                  Admin Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`terminal-input w-full ${errors.email ? "border-destructive" : ""}`}
-                  placeholder="admin@novus.ctf"
-                  autoComplete="email"
-                />
-                {errors.email && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-destructive text-xs mt-1 flex items-center gap-1"
-                  >
-                    <AlertTriangle className="w-3 h-3" />
-                    {errors.email}
-                  </motion.p>
-                )}
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* REGISTER MODE */}
+            {mode === "register" && (
+              <>
+                {/* Team Name */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Team Name (Login ID)
+                  </label>
+                  <input
+                    type="text"
+                    name="teamName"
+                    value={formData.teamName}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.teamName ? "border-destructive" : ""}`}
+                    placeholder="e.g., Phantom_Hackers"
+                    maxLength={30}
+                  />
+                  {errors.teamName && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.teamName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
+                      placeholder="Min 6 characters"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.confirmPassword ? "border-destructive" : ""}`}
+                    placeholder="Confirm password"
+                  />
+                  {errors.confirmPassword && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+
+                {/* Leader Name */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider flex items-center gap-1">
+                    <User className="w-3 h-3" /> Leader Name
+                  </label>
+                  <input
+                    type="text"
+                    name="leaderName"
+                    value={formData.leaderName}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.leaderName ? "border-destructive" : ""}`}
+                    placeholder="Full name"
+                  />
+                  {errors.leaderName && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.leaderName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Leader Email */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Leader Email
+                  </label>
+                  <input
+                    type="email"
+                    name="leaderEmail"
+                    value={formData.leaderEmail}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.leaderEmail ? "border-destructive" : ""}`}
+                    placeholder="leader@institution.edu"
+                  />
+                  {errors.leaderEmail && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.leaderEmail}
+                    </p>
+                  )}
+                </div>
+
+                {/* Institution */}
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider flex items-center gap-1">
+                    <Building2 className="w-3 h-3" /> Institution
+                  </label>
+                  <input
+                    type="text"
+                    name="institution"
+                    value={formData.institution}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.institution ? "border-destructive" : ""}`}
+                    placeholder="e.g., IIT Delhi"
+                  />
+                  {errors.institution && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.institution}
+                    </p>
+                  )}
+                </div>
+              </>
             )}
 
-            {/* Password */}
-            <div>
-              <label className="block text-xs text-muted-foreground mb-2 font-mono uppercase tracking-wider">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <motion.p
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-destructive text-xs mt-1 flex items-center gap-1"
-                >
-                  <AlertTriangle className="w-3 h-3" />
-                  {errors.password}
-                </motion.p>
-              )}
-            </div>
+            {/* LOGIN MODE */}
+            {mode === "login" && (
+              <>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Team Name
+                  </label>
+                  <input
+                    type="text"
+                    name="teamName"
+                    value={formData.teamName}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.teamName ? "border-destructive" : ""}`}
+                    placeholder="Enter your team name"
+                  />
+                  {errors.teamName && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.teamName}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ADMIN MODE */}
+            {mode === "admin" && (
+              <>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Admin Email
+                  </label>
+                  <input
+                    type="email"
+                    name="adminEmail"
+                    value={formData.adminEmail}
+                    onChange={handleChange}
+                    className={`terminal-input w-full ${errors.adminEmail ? "border-destructive" : ""}`}
+                    placeholder="admin@novus.ctf"
+                  />
+                  {errors.adminEmail && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.adminEmail}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`terminal-input w-full pr-10 ${errors.password ? "border-destructive" : ""}`}
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-destructive text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Submit */}
             <motion.button
@@ -398,13 +665,14 @@ export default function Login() {
                   >
                     <Shield className="w-4 h-4" />
                   </motion.div>
-                  <span>Authenticating...</span>
+                  <span>{mode === "register" ? "Registering..." : "Authenticating..."}</span>
                 </>
               ) : (
                 <>
                   {getModeIcon()}
                   <span>
-                    {mode === "login" && "Access System"}
+                    {mode === "register" && "Register Team"}
+                    {mode === "login" && "Login"}
                     {mode === "admin" && "Admin Login"}
                   </span>
                 </>
@@ -412,23 +680,8 @@ export default function Login() {
             </motion.button>
           </form>
 
-          {/* Register link for teams */}
-          {mode === "login" && (
-            <div className="mt-6 pt-4 border-t border-border text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                New team? Register first
-              </p>
-              <button
-                onClick={() => navigate("/team")}
-                className="text-primary text-sm hover:underline font-mono"
-              >
-                [ REGISTER TEAM ]
-              </button>
-            </div>
-          )}
-
           {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-border text-center">
+          <div className="mt-4 pt-4 border-t border-border text-center">
             <p className="text-xs text-muted-foreground">
               {mode === "admin" ? (
                 "Admin access is monitored and logged"
@@ -447,7 +700,7 @@ export default function Login() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-6 text-center space-y-2"
+          className="mt-4 text-center"
         >
           <button
             onClick={() => navigate("/")}
@@ -455,9 +708,6 @@ export default function Login() {
           >
             [ BACK TO HOME ]
           </button>
-          <p className="text-xs text-muted-foreground/50 font-mono">
-            ◉ 256-BIT ENCRYPTION ENABLED
-          </p>
         </motion.div>
       </motion.div>
     </div>
