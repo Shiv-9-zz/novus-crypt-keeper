@@ -259,8 +259,7 @@ export default function ChallengeVault() {
         }, 2500);
       } else {
         setShowWrong(true);
-        setTimeout(() => setShowWrong(false), 1000);
-        toast.error("Incorrect flag. Try again!");
+        setTimeout(() => setShowWrong(false), 1500);
       }
     } catch (error) {
       console.error("Submission error:", error);
@@ -344,6 +343,52 @@ export default function ChallengeVault() {
                 className="text-2xl text-muted-foreground font-mono"
               >
                 +{selectedChallenge?.points} POINTS
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Wrong Flag Overlay */}
+      <AnimatePresence>
+        {showWrong && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-destructive/10 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="text-center"
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: 0 }}
+                animate={{ 
+                  scale: [0, 1.3, 1],
+                  rotate: [0, -10, 10, -10, 0]
+                }}
+                transition={{ duration: 0.6 }}
+              >
+                <XCircle className="w-32 h-32 text-destructive mx-auto mb-6" />
+              </motion.div>
+              <motion.h2
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-4xl font-bold text-destructive mb-4"
+              >
+                ACCESS DENIED
+              </motion.h2>
+              <motion.p
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-xl text-muted-foreground font-mono"
+              >
+                Incorrect flag. Try again!
               </motion.p>
             </motion.div>
           </motion.div>
