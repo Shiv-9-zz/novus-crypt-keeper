@@ -186,6 +186,7 @@
       transparent 100%
     );
     animation: glitch-scan 3s ease-in-out infinite;
+    pointer-events: none;
   }
 
   /* Flicker effect */
