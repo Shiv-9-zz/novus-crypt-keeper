@@ -56,10 +56,10 @@ export function CyberBackground() {
     let glitchDuration = 0;
 
     const animate = (timestamp: number) => {
-      // Glitch flash effect
-      if (Math.random() < 0.001 && !isGlitching) {
+      // Glitch flash effect - reduced frequency
+      if (Math.random() < 0.0005 && !isGlitching) {
         isGlitching = true;
-        glitchDuration = Math.random() * 200 + 50;
+        glitchDuration = Math.random() * 100 + 30;
         lastGlitchTime = timestamp;
       }
 
@@ -67,8 +67,9 @@ export function CyberBackground() {
         isGlitching = false;
       }
 
-      // Clear with trail effect
-      ctx.fillStyle = isGlitching ? "rgba(0, 20, 10, 0.3)" : "rgba(3, 7, 10, 0.1)";
+      // Clear canvas properly each frame to prevent artifacts
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgb(3, 7, 10)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const particles = particlesRef.current;
@@ -120,15 +121,15 @@ export function CyberBackground() {
         }
       });
 
-      // Spawn glitch blocks
-      if (Math.random() < 0.03) {
+      // Spawn glitch blocks - reduced frequency
+      if (Math.random() < 0.01) {
         glitchBlocksRef.current.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          width: Math.random() * 100 + 20,
-          height: Math.random() * 10 + 2,
+          width: Math.random() * 80 + 15,
+          height: Math.random() * 6 + 1,
           lifetime: 0,
-          maxLifetime: Math.random() * 10 + 5,
+          maxLifetime: Math.random() * 8 + 3,
           color: Math.random() < 0.5 ? "0, 255, 157" : "0, 200, 255",
         });
       }
@@ -151,28 +152,28 @@ export function CyberBackground() {
         return true;
       });
 
-      // Draw occasional horizontal glitch lines
-      if (Math.random() < 0.04) {
+      // Draw occasional horizontal glitch lines - reduced frequency
+      if (Math.random() < 0.015) {
         const y = Math.random() * canvas.height;
-        const height = Math.random() * 3 + 1;
-        const offset = (Math.random() - 0.5) * 20;
+        const height = Math.random() * 2 + 0.5;
+        const offset = (Math.random() - 0.5) * 10;
         
         // Main line
-        ctx.fillStyle = `rgba(0, 255, 157, ${Math.random() * 0.15 + 0.05})`;
+        ctx.fillStyle = `rgba(0, 255, 157, ${Math.random() * 0.08 + 0.02})`;
         ctx.fillRect(0, y, canvas.width, height);
         
         // Offset chromatic lines
-        ctx.fillStyle = `rgba(255, 0, 100, ${Math.random() * 0.1})`;
+        ctx.fillStyle = `rgba(255, 0, 100, ${Math.random() * 0.05})`;
         ctx.fillRect(offset, y, canvas.width, height);
-        ctx.fillStyle = `rgba(0, 100, 255, ${Math.random() * 0.1})`;
+        ctx.fillStyle = `rgba(0, 100, 255, ${Math.random() * 0.05})`;
         ctx.fillRect(-offset, y, canvas.width, height);
       }
 
-      // Vertical tear effect
-      if (Math.random() < 0.01) {
+      // Vertical tear effect - reduced frequency
+      if (Math.random() < 0.005) {
         const x = Math.random() * canvas.width;
-        const width = Math.random() * 5 + 2;
-        ctx.fillStyle = `rgba(0, 255, 157, 0.05)`;
+        const width = Math.random() * 3 + 1;
+        ctx.fillStyle = `rgba(0, 255, 157, 0.03)`;
         ctx.fillRect(x, 0, width, canvas.height);
       }
 
