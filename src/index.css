@@ -261,7 +261,7 @@
 
   .cyber-card::before {
     content: "";
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
     background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, transparent 50%);
   }
 
