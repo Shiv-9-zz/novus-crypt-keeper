@@ -392,7 +392,7 @@ export default function Login() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="cyber-card p-6 md:p-8 glitch-box noise max-h-[75vh] overflow-y-auto"
+          className="cyber-card p-6 md:p-8 max-h-[75vh] overflow-y-auto"
         >
           {/* Mode tabs */}
           <div className="flex gap-1 mb-4">
