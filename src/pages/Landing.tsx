@@ -39,16 +39,17 @@ export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Live animated background */}
+    <div className="min-h-screen bg-transparent relative overflow-hidden">
+      {/* Live animated background - fixed to viewport */}
+      <div className="fixed inset-0 bg-background" style={{ zIndex: -2 }} />
       <CyberBackground />
-      <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent z-[1]" />
+      <div className="fixed inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent pointer-events-none" style={{ zIndex: -1 }} />
       
-      {/* Animated corner accents */}
-      <div className="absolute top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-primary/30" />
-      <div className="absolute top-0 right-0 w-32 h-32 border-r-2 border-t-2 border-primary/30" />
-      <div className="absolute bottom-0 left-0 w-32 h-32 border-l-2 border-b-2 border-primary/30" />
-      <div className="absolute bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-primary/30" />
+      {/* Animated corner accents - fixed to viewport */}
+      <div className="fixed top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-primary/30 pointer-events-none" style={{ zIndex: -1 }} />
+      <div className="fixed top-0 right-0 w-32 h-32 border-r-2 border-t-2 border-primary/30 pointer-events-none" style={{ zIndex: -1 }} />
+      <div className="fixed bottom-0 left-0 w-32 h-32 border-l-2 border-b-2 border-primary/30 pointer-events-none" style={{ zIndex: -1 }} />
+      <div className="fixed bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-primary/30 pointer-events-none" style={{ zIndex: -1 }} />
 
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 md:px-12">
