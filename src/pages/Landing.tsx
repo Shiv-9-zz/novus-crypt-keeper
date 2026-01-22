@@ -32,7 +32,7 @@ const stats = [
   { value: "50+", label: "Challenges" },
   { value: "6", label: "Categories" },
   { value: "Pan-India", label: "Competition" },
-  { value: "24H", label: "Duration" },
+  { value: "6H", label: "Duration" },
 ];
 
 export default function Landing() {
