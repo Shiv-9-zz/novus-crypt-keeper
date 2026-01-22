@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AlertTriangle, Home } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { BackButton } from "@/components/BackButton";
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -17,6 +18,9 @@ export default function NotFound() {
         animate={{ opacity: 1, scale: 1 }}
         className="text-center max-w-md relative z-10"
       >
+        <div className="flex justify-center mb-4">
+          <BackButton to="/" label="Go Back" />
+        </div>
         <Logo size="md" />
         
         <motion.div

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { BackButton } from "@/components/BackButton";
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -397,7 +398,10 @@ export default function ChallengeVault() {
 
       {/* Header */}
       <header className="p-4 border-b border-border flex items-center justify-between relative z-10">
-        <Logo size="sm" animate={false} />
+        <div className="flex items-center gap-4">
+          <BackButton to="/rules" label="Back to Rules" />
+          <Logo size="sm" animate={false} />
+        </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm">
             <Shield className="w-4 h-4 text-primary" />

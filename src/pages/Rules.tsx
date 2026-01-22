@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ScrollText, ChevronDown, Check, AlertTriangle, Shield, ArrowLeft } from "lucide-react";
+import { ScrollText, ChevronDown, Check, AlertTriangle, Shield } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { BackButton } from "@/components/BackButton";
 
 const rules = [
   {
@@ -96,13 +97,7 @@ export default function Rules() {
       <header className="flex-shrink-0 p-4 md:p-6 border-b border-border bg-background/80 backdrop-blur-sm relative z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/login")}
-              className="flex items-center gap-2 px-3 py-2 rounded border border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary transition-all text-sm font-medium"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Login</span>
-            </button>
+            <BackButton to="/login" label="Back to Login" />
             <Logo size="sm" animate={false} />
           </div>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">

@@ -5,6 +5,7 @@ import { Users, Plus, Trash2, ArrowRight, User } from "lucide-react";
 import { z } from "zod";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { BackButton } from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -165,7 +166,10 @@ export default function TeamMembers() {
         className="p-4 md:p-6 border-b border-border"
       >
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <Logo size="sm" animate={false} />
+          <div className="flex items-center gap-4">
+            <BackButton to="/login" label="Back to Login" />
+            <Logo size="sm" animate={false} />
+          </div>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <Users className="w-4 h-4" />
             <span className="font-mono">TEAM SETUP</span>
