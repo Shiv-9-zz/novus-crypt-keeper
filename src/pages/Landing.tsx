@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Shield, Skull, Terminal, Lock, Eye, Binary, ChevronRight, Users } from "lucide-react";
+import { Shield, Flag, Terminal, Lock, Eye, Binary, ChevronRight, Users } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 
@@ -70,11 +70,11 @@ export default function Landing() {
           className="space-y-6"
         >
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Skull className="w-6 h-6 text-primary animate-pulse" />
+            <Flag className="w-6 h-6 text-primary animate-pulse" />
             <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
-              Capture The Flag 2025
+              Capture The Flag 2026
             </span>
-            <Skull className="w-6 h-6 text-primary animate-pulse" />
+            <Flag className="w-6 h-6 text-primary animate-pulse" />
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter">
