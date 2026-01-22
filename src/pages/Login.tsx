@@ -435,26 +435,20 @@ export default function Login() {
           </div>
 
           {/* Mode indicator */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mode}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className={`text-center mb-4 py-2 rounded border ${
-                mode === "admin" 
-                  ? "border-destructive/30 bg-destructive/5" 
-                  : "border-primary/30 bg-primary/5"
-              }`}
-            >
-              <p className={`text-xs font-mono flex items-center justify-center gap-2 ${
-                mode === "admin" ? "text-destructive" : "text-primary"
-              }`}>
-                {getModeIcon()}
-                {getModeTitle()}
-              </p>
-            </motion.div>
-          </AnimatePresence>
+          <div
+            className={`text-center mb-4 py-2 rounded border transition-colors duration-200 ${
+              mode === "admin" 
+                ? "border-destructive/30 bg-destructive/5" 
+                : "border-primary/30 bg-primary/5"
+            }`}
+          >
+            <p className={`text-xs font-mono flex items-center justify-center gap-2 transition-colors duration-200 ${
+              mode === "admin" ? "text-destructive" : "text-primary"
+            }`}>
+              {getModeIcon()}
+              {getModeTitle()}
+            </p>
+          </div>
 
           {/* Admin warning */}
           {mode === "admin" && (
