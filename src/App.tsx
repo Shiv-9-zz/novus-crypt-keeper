@@ -3,18 +3,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { BootScreen } from "@/components/BootScreen";
 import { AuthProvider } from "@/hooks/useAuth";
-import Landing from "@/pages/Landing";
-import Login from "@/pages/Login";
-import Rules from "@/pages/Rules";
-import TeamRegistration from "@/pages/TeamRegistration";
-import TeamMembers from "@/pages/TeamMembers";
-import ChallengeVault from "@/pages/ChallengeVault";
-import Admin from "@/pages/Admin";
-import NotFound from "@/pages/NotFound";
+import { AnimatedRoutes } from "@/components/AnimatedRoutes";
 
 const queryClient = new QueryClient();
 
@@ -60,17 +53,7 @@ const App = () => {
           
           {bootComplete && (
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/rules" element={<Rules />} />
-                <Route path="/team" element={<TeamRegistration />} />
-                <Route path="/team-members" element={<TeamMembers />} />
-                <Route path="/vault" element={<ChallengeVault />} />
-                <Route path="/admin" element={<Admin />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AnimatedRoutes />
             </BrowserRouter>
           )}
         </TooltipProvider>
