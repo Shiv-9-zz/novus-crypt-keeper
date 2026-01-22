@@ -91,63 +91,48 @@ export default function Rules() {
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden">
       <CyberBackground />
+      
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex-shrink-0 p-4 md:p-6 border-b border-border"
-      >
+      <header className="flex-shrink-0 p-4 md:p-6 border-b border-border bg-background/80 backdrop-blur-sm relative z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/login")}
-              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 rounded border border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary transition-all text-sm font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Login</span>
+              <span>Back to Login</span>
             </button>
             <Logo size="sm" animate={false} />
           </div>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <ScrollText className="w-4 h-4" />
-            <span className="font-mono">PROTOCOL AGREEMENT</span>
+            <span className="font-mono hidden sm:inline">PROTOCOL AGREEMENT</span>
           </div>
         </div>
-      </motion.header>
+      </header>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 md:p-6 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex-shrink-0 mb-4"
-        >
+      {/* Main content - fixed height container */}
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full p-4 md:p-6 min-h-0 relative z-10">
+        {/* Title section */}
+        <div className="flex-shrink-0 mb-4">
           <h1 className="text-2xl md:text-3xl font-bold text-primary text-glow mb-2">
             COMPETITION PROTOCOL
           </h1>
           <p className="text-muted-foreground text-sm">
             Read and accept the following rules before proceeding. Scroll to the bottom to continue.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Rules container - takes remaining space */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex-1 relative min-h-0"
-        >
+        {/* Scrollable rules container */}
+        <div className="flex-1 min-h-0 relative">
           <div
             ref={scrollRef}
-            className="cyber-card p-6 h-full overflow-y-auto"
+            className="absolute inset-0 overflow-y-auto rounded-lg border border-border bg-card/50 backdrop-blur-sm p-6"
           >
             {rules.map((rule, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * index }}
                 className="mb-6 last:mb-0"
               >
                 <h2 className="text-primary font-bold mb-2 text-sm md:text-base">
@@ -156,7 +141,7 @@ export default function Rules() {
                 <p className="text-card-foreground text-sm leading-relaxed whitespace-pre-line">
                   {rule.content}
                 </p>
-              </motion.div>
+              </div>
             ))}
 
             {/* End marker */}
@@ -169,49 +154,36 @@ export default function Rules() {
 
           {/* Scroll indicator */}
           {!hasScrolledToBottom && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2"
-            >
-              <motion.div
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="flex flex-col items-center text-muted-foreground"
-              >
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent pointer-events-none flex items-end justify-center pb-2 rounded-b-lg">
+              <div className="flex flex-col items-center text-muted-foreground animate-pulse">
                 <span className="text-xs mb-1">Scroll to continue</span>
                 <ChevronDown className="w-4 h-4" />
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           )}
-        </motion.div>
+        </div>
 
-        {/* Acceptance section - fixed at bottom */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="flex-shrink-0 mt-4 space-y-3"
-        >
+        {/* Acceptance section - always visible at bottom */}
+        <div className="flex-shrink-0 mt-4 space-y-3 bg-background/90 backdrop-blur-sm p-4 -mx-4 md:-mx-6 px-4 md:px-6 border-t border-border">
           {/* Checkbox */}
           <button
             type="button"
             onClick={() => hasScrolledToBottom && setAccepted(!accepted)}
             disabled={!hasScrolledToBottom}
-            className={`flex items-start gap-3 p-3 rounded border transition-all text-left w-full ${
+            className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left w-full ${
               hasScrolledToBottom
-                ? "border-border hover:border-primary/50 cursor-pointer"
-                : "border-border/50 opacity-50 cursor-not-allowed"
-            } ${accepted ? "border-primary bg-primary/5" : ""}`}
+                ? "border-border hover:border-primary/50 cursor-pointer bg-card/50"
+                : "border-border/50 opacity-50 cursor-not-allowed bg-card/20"
+            } ${accepted ? "border-primary bg-primary/10" : ""}`}
           >
             <div
-              className={`w-5 h-5 border rounded flex items-center justify-center flex-shrink-0 transition-all ${
-                accepted ? "bg-primary border-primary" : "border-border"
+              className={`w-6 h-6 border-2 rounded flex items-center justify-center flex-shrink-0 transition-all mt-0.5 ${
+                accepted ? "bg-primary border-primary" : "border-muted-foreground"
               }`}
             >
-              {accepted && <Check className="w-3 h-3 text-primary-foreground" />}
+              {accepted && <Check className="w-4 h-4 text-primary-foreground" />}
             </div>
-            <span className="text-sm text-card-foreground">
+            <span className="text-sm text-card-foreground leading-relaxed">
               I have read and agree to abide by all competition rules and protocols. I understand that
               violation of any rule may result in disqualification.
             </span>
@@ -219,26 +191,26 @@ export default function Rules() {
 
           {/* Warning */}
           {!hasScrolledToBottom && (
-            <div className="flex items-center gap-2 text-muted-foreground text-xs">
-              <AlertTriangle className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-amber-500 text-xs bg-amber-500/10 p-2 rounded">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>You must scroll through all rules before accepting</span>
             </div>
           )}
 
           {/* Proceed button */}
-          <motion.button
+          <button
             onClick={handleProceed}
             disabled={!accepted}
-            whileHover={accepted ? { scale: 1.02 } : {}}
-            whileTap={accepted ? { scale: 0.98 } : {}}
-            className={`cyber-btn w-full flex items-center justify-center gap-2 ${
-              accepted ? "cyber-btn-filled" : "opacity-50 cursor-not-allowed"
+            className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg font-medium transition-all ${
+              accepted 
+                ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer" 
+                : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
             }`}
           >
-            <Shield className="w-4 h-4" />
-            <span>Accept & Proceed</span>
-          </motion.button>
-        </motion.div>
+            <Shield className="w-5 h-5" />
+            <span>Accept & Proceed to Challenge Vault</span>
+          </button>
+        </div>
       </div>
     </div>
   );
