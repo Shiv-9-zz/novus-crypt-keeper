@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ScrollText, ChevronDown, Check, AlertTriangle, Shield } from "lucide-react";
+import { ScrollText, ChevronDown, Check, AlertTriangle, Shield, ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
 
@@ -98,7 +98,16 @@ export default function Rules() {
         className="flex-shrink-0 p-4 md:p-6 border-b border-border"
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Logo size="sm" animate={false} />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate("/login")}
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back to Login</span>
+            </button>
+            <Logo size="sm" animate={false} />
+          </div>
           <div className="flex items-center gap-2 text-muted-foreground text-sm">
             <ScrollText className="w-4 h-4" />
             <span className="font-mono">PROTOCOL AGREEMENT</span>
