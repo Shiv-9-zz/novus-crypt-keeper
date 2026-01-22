@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown, Building2, User, LogOut, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
@@ -756,7 +756,7 @@ export default function Login() {
               ) : (
                 <>
                   By proceeding, you accept the{" "}
-                  <span className="text-primary cursor-pointer hover:underline">Terms of Engagement</span>
+                  <Link to="/rules" className="text-primary cursor-pointer hover:underline">Terms of Engagement</Link>
                 </>
               )}
             </p>
