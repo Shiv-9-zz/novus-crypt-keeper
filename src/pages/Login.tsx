@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, AlertTriangle, Shield, Users, Lock, Crown, Building2, User, LogOut, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -374,8 +375,11 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Logo */}
+        {/* Back button and Logo */}
         <div className="text-center mb-6">
+          <div className="flex justify-center mb-4">
+            <BackButton to="/" label="Back to Home" />
+          </div>
           <Logo size="lg" />
           <motion.p
             initial={{ opacity: 0 }}

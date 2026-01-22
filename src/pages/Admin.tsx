@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
+import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -454,6 +455,7 @@ export default function Admin() {
       <header className="border-b border-border bg-card/50 sticky top-0 z-50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <BackButton to="/login" label="Back to Login" />
             <Logo size="sm" />
             <span className="text-xs font-mono text-accent uppercase tracking-wider px-2 py-1 bg-accent/10 rounded">
               Admin Panel
