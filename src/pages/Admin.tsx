@@ -55,7 +55,7 @@ type Team = {
   created_at: string;
 };
 
-const categories = ["Crypto", "Web", "OSINT", "Forensics", "Reverse", "Misc"];
+const categories = ["Crypto", "Web", "OSINT", "Forensics", "Reverse", "Misc", "Steganography"];
 const difficulties = ["easy", "medium", "hard", "insane"] as const;
 
 export default function Admin() {
