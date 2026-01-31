@@ -259,6 +259,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_public_team_members: {
+        Args: { p_team_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          team_id: string
+        }[]
+      }
+      get_public_teams: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          institution: string
+          leader_name: string
+          name: string
+          score: number
+          team_id: string
+          team_size: number
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
