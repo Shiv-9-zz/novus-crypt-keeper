@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const teamNameSchema = z.string().min(3, "Min 3 characters").max(30, "Max 30 characters");
-const passwordSchema = z.string().min(6, "Min 6 characters").max(128);
+const passwordSchema = z.string().min(1, "Password required").max(128);
 const emailSchema = z.string().email("Invalid email format").max(255);
 const nameSchema = z.string().min(1, "Required");
 
