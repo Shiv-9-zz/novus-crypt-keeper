@@ -57,13 +57,12 @@ export default function Login() {
     const storedTeamId = sessionStorage.getItem("novus_team_id");
     const storedTeamName = sessionStorage.getItem("novus_team_name");
     
+    // Use RPC function to get teams (bypasses RLS)
+    const { data: allTeams } = await supabase.rpc("get_public_teams");
+    
     if (storedTeamId && storedTeamName) {
-      // We have stored team info, verify it exists and check members
-      const { data: team } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("team_id", storedTeamId)
-        .maybeSingle();
+      // We have stored team info, verify it exists
+      const team = allTeams?.find((t) => t.team_id === storedTeamId);
       
       if (team) {
         const { data: members } = await supabase
@@ -81,14 +80,14 @@ export default function Login() {
       }
     }
     
-    // Try to find team by email pattern
+    // Try to find team by email pattern using RPC results
     const teamNameFromEmail = user.email.split("@")[0];
+    const searchPattern = teamNameFromEmail.replace(/_/g, " ").toLowerCase();
     
-    const { data: team } = await supabase
-      .from("teams")
-      .select("id, team_id, name")
-      .ilike("name", teamNameFromEmail.replace(/_/g, "%"))
-      .maybeSingle();
+    const team = allTeams?.find((t) => 
+      t.name.toLowerCase().includes(searchPattern) || 
+      t.name.toLowerCase().replace(/\s+/g, "_") === teamNameFromEmail.toLowerCase()
+    );
     
     if (team) {
       sessionStorage.setItem("novus_team_id", team.team_id);
@@ -214,12 +213,9 @@ export default function Login() {
         
         sessionStorage.setItem("novus_team_name", formData.teamName.trim());
         
-        // Get team and check if members already exist
-        const { data: team } = await supabase
-          .from("teams")
-          .select("id, team_id")
-          .eq("name", formData.teamName.trim())
-          .maybeSingle();
+        // Get team using RPC function (bypasses RLS)
+        const { data: allTeams } = await supabase.rpc("get_public_teams");
+        const team = allTeams?.find((t) => t.name === formData.teamName.trim());
         
         if (team) {
           sessionStorage.setItem("novus_team_id", team.team_id);
