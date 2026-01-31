@@ -61,10 +61,8 @@ export function Leaderboard() {
 
   const fetchTeams = async () => {
     try {
-      const { data, error } = await supabase
-        .from("teams")
-        .select("id, team_id, name, institution, score, leader_name")
-        .order("score", { ascending: false });
+      // Use secure function that doesn't expose emails
+      const { data, error } = await supabase.rpc("get_public_teams");
 
       if (error) throw error;
       setTeams(data || []);
