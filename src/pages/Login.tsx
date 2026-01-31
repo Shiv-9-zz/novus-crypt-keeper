@@ -46,27 +46,41 @@ export default function Login() {
     if (isAdmin) {
       navigate("/admin");
     } else {
-      await fetchTeamInfo();
+      await fetchTeamAndNavigate();
     }
   };
 
-  const fetchTeamInfo = async () => {
+  const fetchTeamAndNavigate = async () => {
     if (!user?.email) return;
     
     const teamNameFromEmail = user.email.split("@")[0];
     
     const { data: team } = await supabase
       .from("teams")
-      .select("team_id, name")
+      .select("id, team_id, name")
       .ilike("name", teamNameFromEmail.replace(/_/g, "%"))
       .maybeSingle();
     
     if (team) {
       sessionStorage.setItem("novus_team_id", team.team_id);
       sessionStorage.setItem("novus_team_name", team.name);
+      
+      // Check if team has members already
+      const { data: members } = await supabase
+        .from("team_members")
+        .select("id")
+        .eq("team_id", team.id)
+        .limit(1);
+      
+      // If members exist, go to rules; otherwise team-members
+      if (members && members.length > 0) {
+        navigate("/rules");
+      } else {
+        navigate("/team-members");
+      }
+    } else {
+      navigate("/team-members");
     }
-    
-    navigate("/team-members");
   };
 
   const generateTeamId = () => {
@@ -322,7 +336,7 @@ export default function Login() {
                 className="w-full cyber-btn cyber-btn-filled flex items-center justify-center gap-2"
               >
                 <ArrowRight className="w-4 h-4" />
-                Continue to {isAdmin ? "Admin Panel" : "Challenge Vault"}
+                Continue to {isAdmin ? "Admin Panel" : "Challenges"}
               </motion.button>
               
               <motion.button

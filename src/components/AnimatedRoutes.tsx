@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "./PageTransition";
+import { ProtectedRoute } from "./ProtectedRoute";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Rules from "@/pages/Rules";
@@ -36,7 +37,9 @@ export function AnimatedRoutes() {
           path="/rules"
           element={
             <PageTransition>
-              <Rules />
+              <ProtectedRoute requireTeam>
+                <Rules />
+              </ProtectedRoute>
             </PageTransition>
           }
         />
@@ -52,7 +55,9 @@ export function AnimatedRoutes() {
           path="/team-members"
           element={
             <PageTransition>
-              <TeamMembers />
+              <ProtectedRoute requireTeam>
+                <TeamMembers />
+              </ProtectedRoute>
             </PageTransition>
           }
         />
@@ -60,7 +65,9 @@ export function AnimatedRoutes() {
           path="/vault"
           element={
             <PageTransition>
-              <ChallengeVault />
+              <ProtectedRoute requireTeam>
+                <ChallengeVault />
+              </ProtectedRoute>
             </PageTransition>
           }
         />
@@ -68,7 +75,9 @@ export function AnimatedRoutes() {
           path="/admin"
           element={
             <PageTransition>
-              <Admin />
+              <ProtectedRoute requireAdmin>
+                <Admin />
+              </ProtectedRoute>
             </PageTransition>
           }
         />

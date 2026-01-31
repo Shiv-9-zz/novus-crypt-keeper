@@ -29,7 +29,6 @@ interface Challenge {
   description: string;
   points: number;
   hint: string | null;
-  flag: string;
   is_locked: boolean;
   solve_count: number;
   files: ChallengeFile[];
@@ -223,34 +222,26 @@ export default function ChallengeVault() {
     setSubmitting(true);
     
     try {
-      const isCorrect = flagInput.trim() === selectedChallenge.flag;
-      
-      await supabase.from("submissions").insert({
-        team_id: teamDbId,
-        challenge_id: selectedChallenge.id,
-        submitted_flag: flagInput.trim(),
-        is_correct: isCorrect,
+      // Use server-side flag verification for security
+      const { data, error } = await supabase.functions.invoke("verify-flag", {
+        body: {
+          challengeId: selectedChallenge.id,
+          teamId: teamDbId,
+          submittedFlag: flagInput.trim(),
+        },
       });
 
-      if (isCorrect) {
-        const { data: teamData } = await supabase
-          .from("teams")
-          .select("score")
-          .eq("id", teamDbId)
-          .single();
-        
-        if (teamData) {
-          await supabase
-            .from("teams")
-            .update({ score: teamData.score + selectedChallenge.points })
-            .eq("id", teamDbId);
-        }
+      if (error) {
+        throw new Error(error.message || "Failed to verify flag");
+      }
 
-        await supabase
-          .from("challenges")
-          .update({ solve_count: selectedChallenge.solve_count + 1 })
-          .eq("id", selectedChallenge.id);
+      if (data.alreadySolved) {
+        toast.info("You've already solved this challenge!");
+        setFlagInput("");
+        return;
+      }
 
+      if (data.correct) {
         setShowSuccess(true);
         setSolvedChallenges(prev => [...prev, selectedChallenge.id]);
         
@@ -262,9 +253,9 @@ export default function ChallengeVault() {
         setShowWrong(true);
         setTimeout(() => setShowWrong(false), 1500);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Submission error:", error);
-      toast.error("Failed to submit flag");
+      toast.error(error.message || "Failed to submit flag");
     } finally {
       setSubmitting(false);
     }
