@@ -19,6 +19,7 @@ import {
   Download,
   ChevronDown,
   AlertTriangle,
+  Trophy,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
@@ -26,6 +27,7 @@ import { BackButton } from "@/components/BackButton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { Leaderboard } from "@/components/Leaderboard";
 
 type Challenge = {
   id: string;
@@ -59,7 +61,7 @@ const difficulties = ["easy", "medium", "hard", "insane"] as const;
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isAdmin, signOut, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"challenges" | "teams">("challenges");
+  const [activeTab, setActiveTab] = useState<"challenges" | "teams" | "leaderboard">("challenges");
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -496,6 +498,17 @@ export default function Admin() {
             <Users className="w-4 h-4" />
             Teams ({teams.length})
           </button>
+          <button
+            onClick={() => setActiveTab("leaderboard")}
+            className={`flex items-center gap-2 px-6 py-3 font-mono text-sm uppercase tracking-wider transition-all ${
+              activeTab === "leaderboard"
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-muted-foreground hover:text-primary hover:border-primary"
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            Leaderboard
+          </button>
         </div>
 
         {/* Search and Actions */}
@@ -628,7 +641,7 @@ export default function Admin() {
                 ))
               )}
             </motion.div>
-          ) : (
+          ) : activeTab === "teams" ? (
             <motion.div
               key="teams"
               initial={{ opacity: 0, y: 10 }}
@@ -686,7 +699,16 @@ export default function Admin() {
                 )}
               </div>
             </motion.div>
-          )}
+          ) : activeTab === "leaderboard" ? (
+            <motion.div
+              key="leaderboard"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <Leaderboard />
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </div>
 
