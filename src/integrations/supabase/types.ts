@@ -65,6 +65,13 @@ export type Database = {
             referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "challenge_files_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       challenges: {
@@ -149,6 +156,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "submissions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "submissions_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -230,7 +244,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      challenges_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          difficulty: string | null
+          hint: string | null
+          id: string | null
+          is_locked: boolean | null
+          is_visible: boolean | null
+          points: number | null
+          solve_count: number | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          hint?: string | null
+          id?: string | null
+          is_locked?: boolean | null
+          is_visible?: boolean | null
+          points?: number | null
+          solve_count?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          hint?: string | null
+          id?: string | null
+          is_locked?: boolean | null
+          is_visible?: boolean | null
+          points?: number | null
+          solve_count?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
