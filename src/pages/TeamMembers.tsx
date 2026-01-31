@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Users, Plus, Trash2, ArrowRight, User } from "lucide-react";
+import { Users, Plus, Trash2, ArrowRight, User, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
 import { Logo } from "@/components/Logo";
 import { CyberBackground } from "@/components/CyberBackground";
@@ -15,31 +15,67 @@ const memberSchema = z.object({
 });
 
 interface TeamMember {
+  id?: string;
   name: string;
   email: string;
 }
 
 export default function TeamMembers() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [teamDbId, setTeamDbId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState<string>("");
   const [members, setMembers] = useState<TeamMember[]>([{ name: "", email: "" }]);
+  const [existingMembers, setExistingMembers] = useState<TeamMember[]>([]);
+  const [hasExistingMembers, setHasExistingMembers] = useState(false);
   const [errors, setErrors] = useState<Record<number, Record<string, string>>>({});
 
   useEffect(() => {
-    // Get team info from sessionStorage
-    const storedTeamId = sessionStorage.getItem("novus_team_id");
-    const storedTeamName = sessionStorage.getItem("novus_team_name");
-    
-    if (!storedTeamId) {
-      toast.error("No team found. Please register first.");
-      navigate("/login");
-      return;
-    }
-    
-    setTeamId(storedTeamId);
-    setTeamName(storedTeamName || "Your Team");
+    const init = async () => {
+      const storedTeamId = sessionStorage.getItem("novus_team_id");
+      const storedTeamName = sessionStorage.getItem("novus_team_name");
+      
+      if (!storedTeamId) {
+        toast.error("No team found. Please register first.");
+        navigate("/login");
+        return;
+      }
+      
+      setTeamId(storedTeamId);
+      setTeamName(storedTeamName || "Your Team");
+
+      // Get team database ID
+      const { data: teamData } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("team_id", storedTeamId)
+        .maybeSingle();
+
+      if (teamData) {
+        setTeamDbId(teamData.id);
+
+        // Check for existing members
+        const { data: membersData } = await supabase
+          .from("team_members")
+          .select("id, name, email")
+          .eq("team_id", teamData.id);
+
+        if (membersData && membersData.length > 0) {
+          setExistingMembers(membersData.map(m => ({
+            id: m.id,
+            name: m.name,
+            email: m.email || ""
+          })));
+          setHasExistingMembers(true);
+        }
+      }
+      
+      setLoading(false);
+    };
+
+    init();
   }, [navigate]);
 
   const addMember = () => {
@@ -52,7 +88,6 @@ export default function TeamMembers() {
     if (members.length > 1) {
       const newMembers = members.filter((_, i) => i !== index);
       setMembers(newMembers);
-      // Clear errors for removed member
       const newErrors = { ...errors };
       delete newErrors[index];
       setErrors(newErrors);
@@ -64,7 +99,6 @@ export default function TeamMembers() {
     newMembers[index] = { ...newMembers[index], [field]: value };
     setMembers(newMembers);
     
-    // Clear error for this field
     if (errors[index]?.[field]) {
       const newErrors = { ...errors };
       delete newErrors[index][field];
@@ -77,7 +111,6 @@ export default function TeamMembers() {
     let isValid = true;
 
     members.forEach((member, index) => {
-      // Only validate if at least name is filled
       if (member.name.trim() || member.email.trim()) {
         const result = memberSchema.safeParse(member);
         if (!result.success) {
@@ -92,7 +125,6 @@ export default function TeamMembers() {
       }
     });
 
-    // Check if at least one member has a name
     const hasValidMember = members.some((m) => m.name.trim().length >= 2);
     if (!hasValidMember) {
       toast.error("Please add at least one team member");
@@ -104,31 +136,18 @@ export default function TeamMembers() {
   };
 
   const handleSubmit = async () => {
-    if (!validateMembers() || !teamId) return;
+    if (!validateMembers() || !teamDbId) return;
 
-    setLoading(true);
+    setSaving(true);
     try {
-      // Get the team's database ID using team_id
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("team_id", teamId)
-        .single();
-
-      if (teamError || !teamData) {
-        throw new Error("Team not found");
-      }
-
-      // Filter out empty members and prepare for insert
       const validMembers = members
         .filter((m) => m.name.trim().length >= 2)
         .map((m) => ({
-          team_id: teamData.id,
+          team_id: teamDbId,
           name: m.name.trim(),
           email: m.email.trim() || null,
         }));
 
-      // Insert team members
       const { error: insertError } = await supabase
         .from("team_members")
         .insert(validMembers);
@@ -136,10 +155,11 @@ export default function TeamMembers() {
       if (insertError) throw insertError;
 
       // Update team size
+      const totalMembers = existingMembers.length + validMembers.length;
       await supabase
         .from("teams")
-        .update({ team_size: validMembers.length + 1 }) // +1 for leader
-        .eq("id", teamData.id);
+        .update({ team_size: totalMembers + 1 }) // +1 for leader
+        .eq("id", teamDbId);
 
       toast.success("Team members added successfully!");
       navigate("/rules");
@@ -147,19 +167,101 @@ export default function TeamMembers() {
       console.error("Error adding team members:", error);
       toast.error(error.message || "Failed to add team members");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleSkip = () => {
+  const handleContinue = () => {
     navigate("/rules");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <CyberBackground />
+        <div className="text-primary font-mono animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
+  // If team already has members, show them and allow continuing
+  if (hasExistingMembers) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+        <CyberBackground />
+        
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 md:p-6 border-b border-border"
+        >
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <BackButton to="/login" label="Back to Login" />
+              <Logo size="sm" animate={false} />
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Users className="w-4 h-4" />
+              <span className="font-mono">TEAM SETUP</span>
+            </div>
+          </div>
+        </motion.header>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-2xl"
+          >
+            <div className="cyber-card p-6 md:p-8">
+              <div className="text-center mb-6">
+                <CheckCircle2 className="w-16 h-16 text-primary mx-auto mb-4" />
+                <h1 className="text-2xl md:text-3xl font-bold text-primary text-glow mb-2">
+                  TEAM READY
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Team: <span className="text-primary font-mono">{teamName}</span>
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <h2 className="text-sm font-mono text-muted-foreground mb-3">TEAM MEMBERS</h2>
+                <div className="space-y-2">
+                  {existingMembers.map((member, index) => (
+                    <div key={member.id || index} className="flex items-center gap-3 p-3 rounded border border-border bg-card/50">
+                      <User className="w-4 h-4 text-primary" />
+                      <div>
+                        <p className="text-sm text-foreground">{member.name}</p>
+                        {member.email && (
+                          <p className="text-xs text-muted-foreground">{member.email}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <motion.button
+                type="button"
+                onClick={handleContinue}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full cyber-btn cyber-btn-filled flex items-center justify-center gap-2"
+              >
+                <span>Continue to Rules</span>
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       <CyberBackground />
       
-      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -177,7 +279,6 @@ export default function TeamMembers() {
         </div>
       </motion.header>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -197,7 +298,6 @@ export default function TeamMembers() {
               </p>
             </div>
 
-            {/* Members list */}
             <div className="space-y-4 mb-6">
               {members.map((member, index) => (
                 <motion.div
@@ -261,7 +361,6 @@ export default function TeamMembers() {
               ))}
             </div>
 
-            {/* Add member button */}
             {members.length < 3 && (
               <motion.button
                 type="button"
@@ -275,11 +374,10 @@ export default function TeamMembers() {
               </motion.button>
             )}
 
-            {/* Action buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <motion.button
                 type="button"
-                onClick={handleSkip}
+                onClick={handleContinue}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="flex-1 cyber-btn text-muted-foreground"
@@ -290,19 +388,19 @@ export default function TeamMembers() {
               <motion.button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading}
-                whileHover={!loading ? { scale: 1.02 } : {}}
-                whileTap={!loading ? { scale: 0.98 } : {}}
+                disabled={saving}
+                whileHover={!saving ? { scale: 1.02 } : {}}
+                whileTap={!saving ? { scale: 0.98 } : {}}
                 className="flex-1 cyber-btn cyber-btn-filled flex items-center justify-center gap-2"
               >
-                {loading ? (
+                {saving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <span>Continue to Challenges</span>
+                    <span>Save & Continue</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
