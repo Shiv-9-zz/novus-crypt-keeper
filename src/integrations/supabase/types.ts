@@ -65,11 +65,33 @@ export type Database = {
             referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      challenge_flags: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          flag: string
+          id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          flag: string
+          id?: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          flag?: string
+          id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "challenge_files_challenge_id_fkey"
+            foreignKeyName: "challenge_flags_challenge_id_fkey"
             columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "challenges_public"
+            isOneToOne: true
+            referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
         ]
@@ -80,7 +102,6 @@ export type Database = {
           created_at: string
           description: string
           difficulty: string
-          flag: string
           hint: string | null
           id: string
           is_locked: boolean
@@ -95,7 +116,6 @@ export type Database = {
           created_at?: string
           description: string
           difficulty: string
-          flag: string
           hint?: string | null
           id?: string
           is_locked?: boolean
@@ -110,7 +130,6 @@ export type Database = {
           created_at?: string
           description?: string
           difficulty?: string
-          flag?: string
           hint?: string | null
           id?: string
           is_locked?: boolean
@@ -153,13 +172,6 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "submissions_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "challenges_public"
             referencedColumns: ["id"]
           },
           {
@@ -244,51 +256,7 @@ export type Database = {
       }
     }
     Views: {
-      challenges_public: {
-        Row: {
-          category: string | null
-          created_at: string | null
-          description: string | null
-          difficulty: string | null
-          hint: string | null
-          id: string | null
-          is_locked: boolean | null
-          is_visible: boolean | null
-          points: number | null
-          solve_count: number | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          difficulty?: string | null
-          hint?: string | null
-          id?: string | null
-          is_locked?: boolean | null
-          is_visible?: boolean | null
-          points?: number | null
-          solve_count?: number | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string | null
-          description?: string | null
-          difficulty?: string | null
-          hint?: string | null
-          id?: string | null
-          is_locked?: boolean | null
-          is_visible?: boolean | null
-          points?: number | null
-          solve_count?: number | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       is_admin: { Args: { _user_id: string }; Returns: boolean }

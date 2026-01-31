@@ -25,10 +25,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the challenge and its flag
+    // Get the challenge details
     const { data: challenge, error: challengeError } = await supabase
       .from("challenges")
-      .select("id, flag, points, solve_count, is_visible, is_locked")
+      .select("id, points, solve_count, is_visible, is_locked")
       .eq("id", challengeId)
       .single();
 
@@ -36,6 +36,20 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Challenge not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get the flag from the secure challenge_flags table
+    const { data: flagData, error: flagError } = await supabase
+      .from("challenge_flags")
+      .select("flag")
+      .eq("challenge_id", challengeId)
+      .single();
+
+    if (flagError || !flagData) {
+      return new Response(
+        JSON.stringify({ error: "Flag configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -68,7 +82,7 @@ Deno.serve(async (req) => {
     }
 
     // Verify the flag (case-sensitive comparison)
-    const isCorrect = submittedFlag.trim() === challenge.flag;
+    const isCorrect = submittedFlag.trim() === flagData.flag;
 
     // Record the submission
     await supabase.from("submissions").insert({
