@@ -53,6 +53,35 @@ export default function Login() {
   const fetchTeamAndNavigate = async () => {
     if (!user?.email) return;
     
+    // First check if team info is already in session storage
+    const storedTeamId = sessionStorage.getItem("novus_team_id");
+    const storedTeamName = sessionStorage.getItem("novus_team_name");
+    
+    if (storedTeamId && storedTeamName) {
+      // We have stored team info, verify it exists and check members
+      const { data: team } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("team_id", storedTeamId)
+        .maybeSingle();
+      
+      if (team) {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("id")
+          .eq("team_id", team.id)
+          .limit(1);
+        
+        if (members && members.length > 0) {
+          navigate("/rules");
+        } else {
+          navigate("/team-members");
+        }
+        return;
+      }
+    }
+    
+    // Try to find team by email pattern
     const teamNameFromEmail = user.email.split("@")[0];
     
     const { data: team } = await supabase
@@ -65,21 +94,23 @@ export default function Login() {
       sessionStorage.setItem("novus_team_id", team.team_id);
       sessionStorage.setItem("novus_team_name", team.name);
       
-      // Check if team has members already
       const { data: members } = await supabase
         .from("team_members")
         .select("id")
         .eq("team_id", team.id)
         .limit(1);
       
-      // If members exist, go to rules; otherwise team-members
       if (members && members.length > 0) {
         navigate("/rules");
       } else {
         navigate("/team-members");
       }
     } else {
-      navigate("/team-members");
+      // No team found - user needs to register a team first
+      toast.error("No team found for this account. Please register a new team.");
+      await signOut();
+      sessionStorage.removeItem("novus_team_id");
+      sessionStorage.removeItem("novus_team_name");
     }
   };
 
