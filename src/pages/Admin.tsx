@@ -118,22 +118,30 @@ export default function Admin() {
 
       if (challengesError) throw challengesError;
 
-      // Fetch files for each challenge
-      const challengesWithFiles = await Promise.all(
+      // Fetch files and flags for each challenge
+      const challengesWithFilesAndFlags = await Promise.all(
         (challengesData || []).map(async (challenge) => {
-          const { data: files } = await supabase
-            .from("challenge_files")
-            .select("*")
-            .eq("challenge_id", challenge.id);
+          const [{ data: files }, { data: flagData }] = await Promise.all([
+            supabase
+              .from("challenge_files")
+              .select("*")
+              .eq("challenge_id", challenge.id),
+            supabase
+              .from("challenge_flags")
+              .select("flag")
+              .eq("challenge_id", challenge.id)
+              .maybeSingle()
+          ]);
           
           return {
             ...challenge,
+            flag: flagData?.flag || "",
             files: files || [],
           };
         })
       );
 
-      setChallenges(challengesWithFiles as Challenge[]);
+      setChallenges(challengesWithFilesAndFlags as Challenge[]);
     } catch (error) {
       console.error("Error fetching challenges:", error);
       toast.error("Failed to load challenges");
@@ -279,6 +287,7 @@ export default function Admin() {
     setSaving(true);
     try {
       if (editingChallenge) {
+        // Update challenge (without flag - it's in separate table now)
         const { error } = await supabase
           .from("challenges")
           .update({
@@ -287,7 +296,6 @@ export default function Admin() {
             difficulty: formData.difficulty,
             description: formData.description,
             points: formData.points,
-            flag: formData.flag,
             hint: formData.hint || null,
             is_locked: formData.is_locked,
             is_visible: formData.is_visible,
@@ -296,6 +304,16 @@ export default function Admin() {
 
         if (error) throw error;
 
+        // Update flag in challenge_flags table
+        const { error: flagError } = await supabase
+          .from("challenge_flags")
+          .upsert({
+            challenge_id: editingChallenge.id,
+            flag: formData.flag,
+          }, { onConflict: 'challenge_id' });
+
+        if (flagError) throw flagError;
+
         // Upload new files
         if (pendingFiles.length > 0) {
           await uploadFiles(editingChallenge.id);
@@ -303,6 +321,7 @@ export default function Admin() {
 
         toast.success("Challenge updated");
       } else {
+        // Create challenge (without flag)
         const { data, error } = await supabase
           .from("challenges")
           .insert({
@@ -311,7 +330,6 @@ export default function Admin() {
             difficulty: formData.difficulty,
             description: formData.description,
             points: formData.points,
-            flag: formData.flag,
             hint: formData.hint || null,
             is_locked: formData.is_locked,
             is_visible: formData.is_visible,
@@ -321,9 +339,21 @@ export default function Admin() {
 
         if (error) throw error;
 
-        // Upload files
-        if (pendingFiles.length > 0 && data) {
-          await uploadFiles(data.id);
+        // Insert flag into challenge_flags table
+        if (data) {
+          const { error: flagError } = await supabase
+            .from("challenge_flags")
+            .insert({
+              challenge_id: data.id,
+              flag: formData.flag,
+            });
+
+          if (flagError) throw flagError;
+
+          // Upload files
+          if (pendingFiles.length > 0) {
+            await uploadFiles(data.id);
+          }
         }
 
         toast.success("Challenge created");
